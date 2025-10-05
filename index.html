@@ -148,14 +148,24 @@
         <label>Έως</label>
         <input type="date" id="filterTo">
       </div>
-      <div style="grid-column:span 3">
-        <label>Πελάτης (φίλτρο)</label>
-        <input type="text" id="filterClient" placeholder="π.χ. Γιάννης">
-      </div>
-      <div style="grid-column:span 3">
-        <label>Κείμενο (τοποθεσία/εργασίες)</label>
-        <input type="text" id="filterText" placeholder="λέξη-κλειδί">
-      </div>
+      <div style="grid-column:span 6">
+	   <label>Πελάτης</label>
+		<div style="display:flex; gap:8px">
+		<input type="text" id="client" list="clientsList" placeholder="Όνομα πελάτη" style="flex:1">
+		<button type="button" id="saveClient" title="Αποθήκευση πελάτη">⭐</button>
+		<button type="button" id="manageClients" title="Διαχείριση πελατών">🗂️</button>
+	   </div>
+	  </div>
+      <div style="grid-column:span 6">
+	<label>Τοποθεσία</label>
+	 <div style="display:flex; gap:8px">
+		<input type="text" id="location" list="locationsList" placeholder="Διεύθυνση ή περιοχή" style="flex:1">
+		<button type="button" id="saveLocation" title="Αποθήκευση τοποθεσίας">⭐</button>
+		<button type="button" id="manageLocations" title="Διαχείριση τοποθεσιών">🗂️</button>
+	 </div>
+	</div>
+	<datalist id="clientsList"></datalist>
+	<datalist id="locationsList"></datalist>
     </div>
 
     <div style="overflow:auto;max-height:55vh;margin-top:8px;border:1px solid var(--border);border-radius:10px">
