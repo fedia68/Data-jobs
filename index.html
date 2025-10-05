@@ -33,7 +33,7 @@
 <header>
   <div class="container">
     <h1>📒 Καταγραφή Δουλειών — Υλικά & Ώρες</h1>
-    <div class="sub">Ώρα έναρξης/λήξης (αυτόματες ώρες), αποθήκευση πελατών/τοποθεσιών, υλικά ανά γραμμή, ΦΠΑ, σύνολα.</div>
+    <div class="sub">Ώρα έναρξης/λήξης (αυτόματες ώρες), αποθήκευση πελατών/τοποθεσιών, υλικά ανά γραμμή, ΦΠΑ, σύνολα. Εκτύπωση με φίλτρα.</div>
   </div>
 </header>
 
@@ -46,15 +46,15 @@
       </div>
       <div style="grid-column:span 3">
         <label>Ώρα Έναρξης</label>
-        <input type="time" id="startTime" step="300">
+        <input type="time" id="startTime" step="60">
       </div>
       <div style="grid-column:span 3">
         <label>Ώρα Αποπεράτωσης</label>
-        <input type="time" id="endTime" step="300">
+        <input type="time" id="endTime" step="60">
       </div>
       <div style="grid-column:span 3">
         <label>Ώρες Εργασίας (υπολογισμένο)</label>
-        <input type="number" id="hours" step="0.25" min="0" placeholder="π.χ. 2.5">
+        <input type="number" id="hours" step="0.1" min="0" placeholder="π.χ. 2.5">
       </div>
 
       <div style="grid-column:span 6">
@@ -151,6 +151,32 @@
     </div>
   </section>
 
+  <!-- Φίλτρα λίστας -->
+  <section class="card">
+    <div class="row">
+      <div style="grid-column:span 3">
+        <label>Από Ημερομηνία</label>
+        <input type="date" id="filterFrom">
+      </div>
+      <div style="grid-column:span 3">
+        <label>Έως Ημερομηνία</label>
+        <input type="date" id="filterTo">
+      </div>
+      <div style="grid-column:span 3">
+        <label>Πελάτης (φίλτρο)</label>
+        <input type="text" id="filterClient" placeholder="π.χ. Παπαδόπουλος">
+      </div>
+      <div style="grid-column:span 3">
+        <label>Κείμενο (τοποθεσία/εργασίες)</label>
+        <input type="text" id="filterText" placeholder="λέξη-κλειδί">
+      </div>
+    </div>
+    <div class="btns">
+      <button id="applyFilters">🔎 Εφαρμογή φίλτρων</button>
+      <button id="resetFilters">♻️ Καθαρισμός φίλτρων</button>
+    </div>
+  </section>
+
   <!-- Λίστα -->
   <section class="card">
     <div style="overflow:auto;max-height:55vh;margin-top:8px;border:1px solid var(--border);border-radius:10px">
@@ -181,7 +207,7 @@
     <!-- Γραμμή εργαλείων λίστας -->
     <div class="btns" style="margin-top:10px">
       <button id="exportCsv">⬇️ Εξαγωγή CSV</button>
-      <button id="printList">🖨️ Εκτύπωση</button>
+      <button id="printList">🖨️ Εκτύπωση (με φίλτρα)</button>
       <button id="backupJson">💾 Αντίγραφο (JSON)</button>
       <label class="pill" style="cursor:pointer">
         📤 Εισαγωγή JSON
@@ -200,6 +226,11 @@
   function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
   function money(v){return num(v).toFixed(2);}
   function setStatus(m){$('#status').textContent=m;}
+  function formatDateGreek(d){ // "YYYY-MM-DD" -> "DD/MM/YYYY"
+    if(!d||d.length<10) return d||'';
+    var y=d.slice(0,4), m=d.slice(5,7), dd=d.slice(8,10);
+    return dd+'/'+m+'/'+y;
+  }
 
   var fields = {
     date:$('#date'), startTime:$('#startTime'), endTime:$('#endTime'), hours:$('#hours'),
@@ -212,7 +243,7 @@
       countEl=$('#count'), sumEl=$('#sum');
 
   // ---------------- Local Storage keys
-  var STORAGE_KEY='jobs_v1';
+  var STORAGE_KEY='jobs_v2';
   var LS_CLIENTS='saved_clients';
   var LS_LOCATIONS='saved_locations';
 
@@ -389,9 +420,8 @@
 
   function add(){
     var r=collect(); var err=validate(r); if(err){alert(err);return;}
-    // αποθήκευση πελάτη/τοποθεσίας για επόμενες προτάσεις
-    rememberCurrentValues();
-    data.push(r); saveJobs(); render(); clearForm(); setStatus('Προστέθηκε ✅');
+    rememberCurrentValues(); // αποθήκευση πελάτη/τοποθεσίας
+    data.push(r); saveJobs(); render(); setStatus('Προστέθηκε ✅'); clearForm();
   }
   function startEdit(id){
     var idx=-1; for(var i=0;i<data.length;i++){ if(data[i].id===id){idx=i;break;} }
@@ -417,10 +447,37 @@
     data=arr; saveJobs(); render(); setStatus('Διαγράφηκε 🗑️');
   }
 
+  // ---------------- Filters
+  function filtered(){
+    var fFrom=$('#filterFrom').value, fTo=$('#filterTo').value,
+        fClient=($('#filterClient').value||'').toLowerCase().trim(),
+        fText=($('#filterText').value||'').toLowerCase().trim();
+    var out=[];
+    for(var i=0;i<data.length;i++){
+      var r=data[i];
+      if(fFrom && r.date < fFrom) continue;
+      if(fTo && r.date > fTo) continue;
+      if(fClient && r.client.toLowerCase().indexOf(fClient)===-1) continue;
+      if(fText && (r.location+' '+r.task).toLowerCase().indexOf(fText)===-1) continue;
+      out.push(r);
+    }
+    // ταξινόμηση με ημερομηνία
+    out.sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+    return out;
+  }
+  function applyFilters(){ render(); setStatus('Εφαρμόστηκαν φίλτρα'); }
+  function resetFilters(){
+    $('#filterFrom').value=''; $('#filterTo').value='';
+    $('#filterClient').value=''; $('#filterText').value='';
+    render(); setStatus('Καθαρίστηκαν φίλτρα');
+  }
+  document.getElementById('applyFilters').addEventListener('click', applyFilters);
+  document.getElementById('resetFilters').addEventListener('click', resetFilters);
+
   // ---------------- List & toolbar
   function addRow(r){
     var tr=document.createElement('tr');
-    var cells=[r.date,r.startTime||'—',r.endTime||'—',r.hours,r.client,r.location,r.task,
+    var cells=[formatDateGreek(r.date),r.startTime||'—',r.endTime||'—',r.hours,r.client,r.location,r.task,
                money(r.labor),money(r.materialsSum),money(r.subtotal),r.vatRate+'%',money(r.vatAmount),money(r.total),r.invoice||'—'];
     for(var i=0;i<cells.length;i++){ var td=document.createElement('td'); td.textContent=cells[i]; tr.appendChild(td); }
     var tdAct=document.createElement('td');
@@ -432,9 +489,10 @@
   }
   function render(){
     tbody.innerHTML='';
+    var items=filtered();
     var s=0;
-    for(var i=0;i<data.length;i++){ addRow(data[i]); s+=num(data[i].total); }
-    countEl.textContent=data.length; sumEl.textContent=s.toFixed(2);
+    for(var i=0;i<items.length;i++){ addRow(items[i]); s+=num(items[i].total); }
+    countEl.textContent=items.length; sumEl.textContent=s.toFixed(2);
   }
 
   function downloadFile(filename, mime, content) {
@@ -449,12 +507,13 @@
   }
   function exportCsv() {
     var rows = [['Ημερομηνία','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Πελάτης','Τοποθεσία','Εργασίες','Εργασία (€)','Υλικά (€)','Υποσύνολο (€)','ΦΠΑ (%)','ΦΠΑ (€)','Σύνολο (€)','Παραστατικό','Υλικά (αναλυτικά)']];
-    for (var i=0;i<data.length;i++) {
-      var r = data[i];
+    var items = filtered(); // ΕΞΑΓΩΓΗ ΜΕ ΦΙΛΤΡΑ
+    for (var i=0;i<items.length;i++) {
+      var r = items[i];
       var mats = (r.materials||[]).map(function(m){
         return m.desc + ' x' + m.qty + ' ' + m.unit + ' @' + money(m.price) + '€ = ' + money(m.qty*m.price) + '€';
       }).join(' | ');
-      rows.push([r.date,r.startTime||'',r.endTime||'',r.hours,r.client,r.location,r.task,r.labor,r.materialsSum,r.subtotal,r.vatRate,r.vatAmount,r.total,r.invoice||'',mats]);
+      rows.push([formatDateGreek(r.date),r.startTime||'',r.endTime||'',r.hours,r.client,r.location,r.task,r.labor,r.materialsSum,r.subtotal,r.vatRate,r.vatAmount,r.total,r.invoice||'',mats]);
     }
     var csv = rows.map(function(row){ return row.map(csvEscape).join(','); }).join('\n');
     downloadFile('δουλειές.csv','text/csv;charset=utf-8;', csv);
@@ -478,16 +537,25 @@
     ev.target.value = '';
   }
   function printList() {
+    var items = filtered(); // ΕΚΤΥΠΩΣΗ ΜΕ ΦΙΛΤΡΑ
     var w = window.open('', '_blank');
     var style = 'body{font-family:system-ui,Segoe UI,Arial;padding:24px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px} th{background:#f3f4f6}';
     w.document.write('<html><head><title>Εκτύπωση</title><style>'+style+'</style></head><body>');
     w.document.write('<h2>Λίστα Δουλειών</h2>');
+    // δείξε ενεργά φίλτρα στην κορυφή
+    var fFrom=$('#filterFrom').value, fTo=$('#filterTo').value, fClient=$('#filterClient').value, fText=$('#filterText').value;
+    var filters = [];
+    if(fClient) filters.push('Πελάτης: '+fClient);
+    if(fFrom||fTo) filters.push('Περίοδος: '+(fFrom?formatDateGreek(fFrom):'…')+' — '+(fTo?formatDateGreek(fTo):'…'));
+    if(fText) filters.push('Κείμενο: '+fText);
+    if(filters.length){ w.document.write('<p><i>'+filters.join(' • ')+'</i></p>'); }
+
     w.document.write('<table><thead><tr><th>Ημερομηνία</th><th>Έναρξη</th><th>Λήξη</th><th>Ώρες</th><th>Πελάτης</th><th>Τοποθεσία</th><th>Εργασίες</th><th>Εργασία (€)</th><th>Υλικά (€)</th><th>Υποσύνολο</th><th>ΦΠΑ</th><th>Σύνολο</th><th>Παραστ.</th></tr></thead><tbody>');
-    for (var i=0;i<data.length;i++){
-      var r=data[i];
-      w.document.write('<tr><td>'+r.date+'</td><td>'+(r.startTime||'')+'</td><td>'+(r.endTime||'')+'</td><td>'+r.hours+'</td><td>'+r.client+'</td><td>'+r.location+'</td><td>'+r.task+'</td><td>'+r.labor+'</td><td>'+r.materialsSum+'</td><td>'+r.subtotal+'</td><td>'+r.vatRate+'% ('+r.vatAmount+'€)</td><td>'+r.total+'</td><td>'+(r.invoice||'')+'</td></tr>');
+    for (var i=0;i<items.length;i++){
+      var r=items[i];
+      w.document.write('<tr><td>'+formatDateGreek(r.date)+'</td><td>'+(r.startTime||'')+'</td><td>'+(r.endTime||'')+'</td><td>'+r.hours+'</td><td>'+r.client+'</td><td>'+r.location+'</td><td>'+r.task+'</td><td>'+r.labor+'</td><td>'+r.materialsSum+'</td><td>'+r.subtotal+'</td><td>'+r.vatRate+'% ('+r.vatAmount+'€)</td><td>'+r.total+'</td><td>'+(r.invoice||'')+'</td></tr>');
     }
-    var s=0; for (var j=0;j<data.length;j++){ s += num(data[j].total); }
+    var s=0; for (var j=0;j<items.length;j++){ s += num(items[j].total); }
     w.document.write('<tfoot><tr><td colspan="11" style="text-align:right"><b>Σύνολο (€):</b></td><td colspan="2"><b>'+s.toFixed(2)+'</b></td></tr></tfoot>');
     w.document.write('</tbody></table></body></html>');
     w.document.close(); w.focus(); w.print();
