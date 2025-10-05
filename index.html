@@ -225,7 +225,7 @@
   const materialsSumEl = $$('#materialsSum');
   const countEl = $$('#count');
   const sumEl = $$('#sum');
-  const STORAGE_KEY = 'jobs_v4';
+  const STORAGE_KEY = 'jobs_v4_fix1';
 
   let data = load();
   let editingIndex = null;
@@ -234,64 +234,69 @@
   fields.date.valueAsDate = new Date();
   fields.vatRate.value = localStorage.getItem('vat_default') || 24;
 
-  function load(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{return[]} }
+  function load(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){console.error(e);return[]} }
   function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-  function toNumber(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+  function toNumber(v){ var n=parseFloat(v); return isNaN(n)?0:n; }
   function money(v){ return (toNumber(v)).toFixed(2); }
   function status(msg){ statusEl.textContent = msg; }
 
   // === ΩΡΕΣ ΑΠΟ start/end ===
-  function timeToMinutes(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+  function timeToMinutes(t){ if(!t) return null; var parts=t.split(':'); return parseInt(parts[0],10)*60+parseInt(parts[1],10); }
   function minutesToHours(m){ return (m/60).toFixed(2); }
   function calcHoursFromTimes(){
-    const s = timeToMinutes(fields.startTime.value);
-    const e = timeToMinutes(fields.endTime.value);
+    var s = timeToMinutes(fields.startTime.value);
+    var e = timeToMinutes(fields.endTime.value);
     if(s==null || e==null) return; // χρειάζονται και τα δύο
-    let diff = e - s;
+    var diff = e - s;
     if(diff < 0) diff += 24*60; // πέρασμα μεσάνυχτου
     fields.hours.value = minutesToHours(diff);
   }
 
-  ['startTime','endTime'].forEach(id=> document.getElementById(id).addEventListener('input', ()=>{ calcHoursFromTimes(); recalcTotals(); }));
+  ;['startTime','endTime'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ calcHoursFromTimes(); recalcTotals(); }); });
 
   // ===== ΥΛΙΚΑ =====
   function bindMatRow(tr){
-    tr.querySelectorAll('input').forEach(inp=> inp.addEventListener('input', recalcMaterials));
-    tr.querySelector('.del-row').addEventListener('click', ()=> { tr.remove(); recalcMaterials(); });
+    Array.prototype.forEach.call(tr.querySelectorAll('input'), function(inp){ inp.addEventListener('input', recalcMaterials); });
+    tr.querySelector('.del-row').addEventListener('click', function(){ tr.remove(); recalcMaterials(); });
   }
 
   function addMaterialRow(row){
-    const tr = document.createElement('tr');
-    const idx = materialsTBody.children.length + 1;
-    tr.innerHTML = `
-      <td class="nowrap">${idx}</td>
-      <td><input placeholder="π.χ. Καλώδιο 3x2.5" class="mat-desc"/></td>
-      <td style="width:110px"><input type="number" min="0" step="0.01" class="mat-qty" value="${row?.qty ?? 1}"/></td>
-      <td style="width:120px"><input placeholder="π.χ. m, τμχ" class="mat-unit" value="${row?.unit ?? ''}"/></td>
-      <td style="width:140px"><input type="number" min="0" step="0.01" class="mat-price right" value="${row?.price ?? 0}"/></td>
-      <td class="right line-total">0.00</td>
-      <td><button class="ghost del-row">🗑️</button></td>`;
+    var tr = document.createElement('tr');
+    var idx = materialsTBody.children.length + 1;
+    var qty = row && row.qty != null ? row.qty : 1;
+    var unit = row && row.unit ? row.unit : '';
+    var price = row && row.price != null ? row.price : 0;
+    tr.innerHTML = ''+
+      '<td class="nowrap">'+idx+'</td>'+
+      '<td><input placeholder="π.χ. Καλώδιο 3x2.5" class="mat-desc"/></td>'+
+      '<td style="width:110px"><input type="number" min="0" step="0.01" class="mat-qty" value="'+qty+'"/></td>'+
+      '<td style="width:120px"><input placeholder="π.χ. m, τμχ" class="mat-unit" value="'+unit+'"/></td>'+
+      '<td style="width:140px"><input type="number" min="0" step="0.01" class="mat-price right" value="'+price+'"/></td>'+
+      '<td class="right line-total">0.00</td>'+
+      '<td><button class="ghost del-row">🗑️</button></td>';
     materialsTBody.appendChild(tr);
-    if(row){ tr.querySelector('.mat-desc').value = row.desc || ''; }
+    if(row && row.desc){ tr.querySelector('.mat-desc').value = row.desc; }
     bindMatRow(tr);
     recalcMaterials();
   }
 
   function getMaterials(){
-    return $$$('#materialsTable tbody tr').map(tr => ({
-      desc: tr.querySelector('.mat-desc').value.trim(),
-      qty: toNumber(tr.querySelector('.mat-qty').value),
-      unit: tr.querySelector('.mat-unit').value.trim(),
-      price: toNumber(tr.querySelector('.mat-price').value)
-    })).filter(r => r.desc || r.qty || r.price);
+    return $$$('#materialsTable tbody tr').map(function(tr){
+      return {
+        desc: tr.querySelector('.mat-desc').value.trim(),
+        qty: toNumber(tr.querySelector('.mat-qty').value),
+        unit: tr.querySelector('.mat-unit').value.trim(),
+        price: toNumber(tr.querySelector('.mat-price').value)
+      };
+    }).filter(function(r){ return r.desc || r.qty || r.price; });
   }
 
   function recalcMaterials(){
-    let sum = 0;
-    $$$('#materialsTable tbody tr').forEach(tr => {
-      const qty = toNumber(tr.querySelector('.mat-qty').value);
-      const price = toNumber(tr.querySelector('.mat-price').value);
-      const line = qty * price;
+    var sum = 0;
+    $$$('#materialsTable tbody tr').forEach(function(tr){
+      var qty = toNumber(tr.querySelector('.mat-qty').value);
+      var price = toNumber(tr.querySelector('.mat-price').value);
+      var line = qty * price;
       tr.querySelector('.line-total').textContent = money(line);
       sum += line;
     });
@@ -301,19 +306,19 @@
 
   // ===== ΣΥΝΟΛΑ & ΦΠΑ =====
   function recalcTotals(){
-    const labor = toNumber(fields.labor.value);
-    const mats = toNumber(materialsSumEl.textContent);
-    const subtotal = labor + mats;
-    const vatRate = Math.max(0, toNumber(fields.vatRate.value));
-    const vatAmount = subtotal * vatRate / 100;
+    var labor = toNumber(fields.labor.value);
+    var mats = toNumber(materialsSumEl.textContent);
+    var subtotal = labor + mats;
+    var vatRate = Math.max(0, toNumber(fields.vatRate.value));
+    var vatAmount = subtotal * vatRate / 100;
     fields.subtotal.value = money(subtotal);
     fields.vatAmount.value = money(vatAmount);
     fields.grandTotal.value = money(subtotal + vatAmount);
     localStorage.setItem('vat_default', String(vatRate));
   }
 
-  ['labor','vatRate'].forEach(id => {
-    document.getElementById(id).addEventListener('input', ()=>{ recalcMaterials(); recalcTotals(); });
+  ;['labor','vatRate'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){ recalcMaterials(); recalcTotals(); });
   });
 
   // ===== CRUD =====
@@ -330,7 +335,7 @@
     fields.grandTotal.value = '';
     fields.invoice.value = '';
     materialsTBody.innerHTML = '';
-    addMaterialRow(); // πάντα μία γραμμή διαθέσιμη
+    addMaterialRow();
     editingIndex = null;
     $$('#addBtn').style.display = '';
     $$('#updateBtn').style.display = 'none';
@@ -338,13 +343,13 @@
   }
 
   function collect(){
-    const mats = getMaterials();
-    const materialsSum = mats.reduce((s,r)=> s + r.qty*r.price, 0);
-    const subtotal = toNumber(fields.labor.value) + materialsSum;
-    const vatRate = Math.max(0, toNumber(fields.vatRate.value));
-    const vatAmount = subtotal * vatRate / 100;
+    var mats = getMaterials();
+    var materialsSum = mats.reduce(function(s,r){ return s + r.qty*r.price; }, 0);
+    var subtotal = toNumber(fields.labor.value) + materialsSum;
+    var vatRate = Math.max(0, toNumber(fields.vatRate.value));
+    var vatAmount = subtotal * vatRate / 100;
     return {
-      id: crypto.randomUUID(),
+      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()+Math.random()),
       date: fields.date.value || new Date().toISOString().slice(0,10),
       startTime: fields.startTime.value || '',
       endTime: fields.endTime.value || '',
@@ -366,83 +371,75 @@
   function validate(rec){ if(!rec.client) return 'Συμπληρώστε τον πελάτη'; if(!rec.task) return 'Συμπληρώστε τις εργασίες'; return null; }
 
   function add(){
-    const rec = collect();
-    const err = validate(rec); if(err){ alert(err); return; }
+    var rec = collect();
+    var err = validate(rec); if(err){ alert(err); return; }
     data.push(rec); save(); status('Προστέθηκε ✅'); render(); clearForm();
   }
 
   function startEdit(id){
-    const idx = data.findIndex(r => r.id === id); if(idx===-1) return; const r = data[idx]; editingIndex = idx;
+    var idx = data.findIndex(function(r){ return r.id === id; }); if(idx===-1) return; var r = data[idx]; editingIndex = idx;
     fields.date.value = r.date; fields.startTime.value = r.startTime || ''; fields.endTime.value = r.endTime || '';
-    fields.hours.value = r.hours; fields.client.value = r.client; fields.location.value = r.location; fields.task.value = r.task; fields.labor.value = r.labor; fields.vatRate.value = r.vatRate ?? (localStorage.getItem('vat_default')||24); fields.subtotal.value = r.subtotal; fields.vatAmount.value = r.vatAmount; fields.grandTotal.value = r.total; fields.invoice.value = r.invoice || '';
-    materialsTBody.innerHTML=''; (r.materials||[]).forEach(addMaterialRow); if((r.materials||[]).length===0) addMaterialRow();
+    fields.hours.value = r.hours; fields.client.value = r.client; fields.location.value = r.location; fields.task.value = r.task; fields.labor.value = r.labor; fields.vatRate.value = r.vatRate != null ? r.vatRate : (localStorage.getItem('vat_default')||24); fields.subtotal.value = r.subtotal; fields.vatAmount.value = r.vatAmount; fields.grandTotal.value = r.total; fields.invoice.value = r.invoice || '';
+    materialsTBody.innerHTML=''; (r.materials||[]).forEach(function(row){ addMaterialRow(row); }); if((r.materials||[]).length===0) addMaterialRow();
     $$('#addBtn').style.display = 'none'; $$('#updateBtn').style.display = '';
     status('Επεξεργασία εγγραφής…'); window.scrollTo({top:0, behavior:'smooth'});
     recalcMaterials();
   }
 
-  function update(){ if(editingIndex===null) return; const rec = collect(); rec.id = data[editingIndex].id; const err = validate(rec); if(err){ alert(err); return; } data[editingIndex] = rec; save(); status('Ενημερώθηκε 💾'); render(); clearForm(); }
+  function update(){ if(editingIndex===null) return; var rec = collect(); rec.id = data[editingIndex].id; var err = validate(rec); if(err){ alert(err); return; } data[editingIndex] = rec; save(); status('Ενημερώθηκε 💾'); render(); clearForm(); }
 
-  function remove(id){ if(!confirm('Διαγραφή εγγραφής;')) return; data = data.filter(r => r.id !== id); save(); render(); status('Διαγράφηκε 🗑️'); }
+  function remove(id){ if(!confirm('Διαγραφή εγγραφής;')) return; data = data.filter(function(r){ return r.id !== id; }); save(); render(); status('Διαγράφηκε 🗑️'); }
 
   // ===== ΠΙΝΑΚΑΣ =====
   function filtered(){
-    const fFrom = $$('#filterFrom').value; const fTo = $$('#filterTo').value; const fClient = ($$('#filterClient').value||'').trim().toLowerCase(); const fText = ($$('#filterText').value||'').trim().toLowerCase();
-    return data.filter(r => {
-      if(fFrom && r.date < fFrom) return false; if(fTo && r.date > fTo) return false; if(fClient && !r.client.toLowerCase().includes(fClient)) return false; if(fText && !(r.location+" "+r.task).toLowerCase().includes(fText)) return false; return true;
-    }).sort((a,b)=> a.date.localeCompare(b.date));
+    var fFrom = $$('#filterFrom').value; var fTo = $$('#filterTo').value; var fClient = ($$('#filterClient').value||'').trim().toLowerCase(); var fText = ($$('#filterText').value||'').trim().toLowerCase();
+    return data.filter(function(r){
+      if(fFrom && r.date < fFrom) return false; if(fTo && r.date > fTo) return false; if(fClient && r.client.toLowerCase().indexOf(fClient)===-1) return false; if(fText && (r.location+' '+r.task).toLowerCase().indexOf(fText)===-1) return false; return true;
+    }).sort(function(a,b){ return a.date.localeCompare(b.date); });
   }
 
   function addRow(rec){
-    const tr = document.createElement('tr');
-    const cells = [rec.date, rec.startTime||'—', rec.endTime||'—', rec.hours, rec.client, rec.location, rec.task, money(rec.labor), money(rec.materialsSum), money(rec.subtotal), rec.vatRate+'%', money(rec.vatAmount), money(rec.total), rec.invoice || '—'];
-    cells.forEach(c => { const td=document.createElement('td'); td.textContent=c; tr.appendChild(td); });
-    const tdAct = document.createElement('td'); const e = document.createElement('button'); e.textContent='✏️'; e.className='ghost'; const d = document.createElement('button'); d.textContent='🗑️'; d.className='ghost'; e.addEventListener('click', ()=> startEdit(rec.id)); d.addEventListener('click', ()=> remove(rec.id)); tdAct.append(e,' ',d); tr.appendChild(tdAct);
+    var tr = document.createElement('tr');
+    var cells = [rec.date, rec.startTime||'—', rec.endTime||'—', rec.hours, rec.client, rec.location, rec.task, money(rec.labor), money(rec.materialsSum), money(rec.subtotal), rec.vatRate+'%', money(rec.vatAmount), money(rec.total), rec.invoice || '—'];
+    cells.forEach(function(c){ var td=document.createElement('td'); td.textContent=c; tr.appendChild(td); });
+    var tdAct = document.createElement('td'); var e = document.createElement('button'); e.textContent='✏️'; e.className='ghost'; var d = document.createElement('button'); d.textContent='🗑️'; d.className='ghost'; e.addEventListener('click', function(){ startEdit(rec.id); }); d.addEventListener('click', function(){ remove(rec.id); }); tdAct.appendChild(e); tdAct.appendChild(document.createTextNode(' ')); tdAct.appendChild(d); tr.appendChild(tdAct);
     tbody.appendChild(tr);
   }
 
-  function render(){ tbody.innerHTML=''; const items = filtered(); items.forEach(addRow); countEl.textContent = items.length; const sum = items.reduce((s,r)=> s + toNumber(r.total), 0); sumEl.textContent = sum.toFixed(2); }
+  function render(){ tbody.innerHTML=''; var items = filtered(); items.forEach(addRow); countEl.textContent = items.length; var sum = items.reduce(function(s,r){ return s + toNumber(r.total); }, 0); sumEl.textContent = sum.toFixed(2); }
 
   function applyFilters(){ render(); status('Εφαρμόστηκαν φίλτρα'); }
-  function resetFilters(){ ['#filterFrom','#filterTo','#filterClient','#filterText'].forEach(s=> $$(s).value=''); render(); status('Καθαρίστηκαν φίλτρα'); }
+  function resetFilters(){ ['#filterFrom','#filterTo','#filterClient','#filterText'].forEach(function(s){ $$(s).value=''; }); render(); status('Καθαρίστηκαν φίλτρα'); }
 
   // ===== ΕΞΑΓΩΓΕΣ =====
-  function downloadFile(filename, mime, content){ const blob = new Blob([content], {type:mime}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(()=> URL.revokeObjectURL(url), 0); }
+  function downloadFile(filename, mime, content){ var blob = new Blob([content], {type:mime}); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); }, 0); }
+
+  function csvEscape(s){ return '"'+String(s).replace(/"/g,'""')+'"'; }
 
   function exportCsv(){
-    const rows = [[ 'Ημερομηνία','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Πελάτης','Τοποθεσία','Εργασίες','Εργασία (€)','Υλικά (€)','Υποσύνολο (€)','ΦΠΑ (%)','ΦΠΑ (€)','Σύνολο (€)','Παραστατικό','Υλικά (αναλυτικά)']];
-    filtered().forEach(r=>{
-      const mats = (r.materials||[]).map(m=> `${m.desc} x${m.qty} ${m.unit} @${money(m.price)}€ = ${money(m.qty*m.price)}€`).join(' | ');
+    var rows = [[ 'Ημερομηνία','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Πελάτης','Τοποθεσία','Εργασίες','Εργασία (€)','Υλικά (€)','Υποσύνολο (€)','ΦΠΑ (%)','ΦΠΑ (€)','Σύνολο (€)','Παραστατικό','Υλικά (αναλυτικά)']];
+    filtered().forEach(function(r){
+      var mats = (r.materials||[]).map(function(m){ return m.desc+' x'+m.qty+' '+m.unit+' @'+money(m.price)+'€ = '+money(m.qty*m.price)+'€'; }).join(' | ');
       rows.push([r.date,r.startTime||'',r.endTime||'',r.hours,r.client,r.location,r.task,r.labor,r.materialsSum,r.subtotal,r.vatRate,r.vatAmount,r.total,r.invoice||'', mats]);
     });
-    const csv = rows.map(row=> row.map(cell=> '"'+String(cell).replaceAll('"','""')+'"').join(',')).join('
-');
+    var csv = rows.map(function(row){ return row.map(csvEscape).join(','); }).join('\n');
     downloadFile('δουλειές.csv','text/csv;charset=utf-8;',csv); status('Εξήχθη CSV ⬇️');
   }
 
   function backupJson(){ downloadFile('jobs-backup.json','application/json', JSON.stringify(data,null,2)); status('Αντίγραφο αποθηκεύτηκε 💾'); }
-  function restoreJson(ev){ const f = ev.target.files?.[0]; if(!f) return; const reader = new FileReader(); reader.onload = () => { try{ const arr = JSON.parse(reader.result); if(!Array.isArray(arr)) throw new Error(); data = arr; save(); render(); status('Επαναφορά ολοκληρώθηκε ✅'); }catch(e){ alert('Μη έγκυρο αρχείο JSON'); } }; reader.readAsText(f); ev.target.value=''; }
+  function restoreJson(ev){ var f = ev.target.files && ev.target.files[0]; if(!f) return; var reader = new FileReader(); reader.onload = function(){ try{ var arr = JSON.parse(reader.result); if(!Array.isArray(arr)) throw new Error('bad'); data = arr; save(); render(); status('Επαναφορά ολοκληρώθηκε ✅'); }catch(e){ alert('Μη έγκυρο αρχείο JSON'); } }; reader.readAsText(f); ev.target.value=''; }
 
-  function printList(){ const w = window.open('','_blank'); const rows = filtered(); const style = `body{font-family:system-ui,Segoe UI,Arial;padding:24px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px} th{background:#f3f4f6}`; w.document.write('<html><head><title>Εκτύπωση</title><style>'+style+'</style></head><body>'); w.document.write('<h2>Λίστα Δουλειών</h2>'); w.document.write('<table><thead><tr><th>Ημερομηνία</th><th>Έναρξη</th><th>Λήξη</th><th>Ώρες</th><th>Πελάτης</th><th>Τοποθεσία</th><th>Εργασίες</th><th>Εργασία (€)</th><th>Υλικά (€)</th><th>Υποσύνολο</th><th>ΦΠΑ</th><th>Σύνολο</th><th>Παραστ.</th></tr></thead><tbody>'); rows.forEach(r=>{ w.document.write(`<tr><td>${r.date}</td><td>${r.startTime||''}</td><td>${r.endTime||''}</td><td>${r.hours}</td><td>${r.client}</td><td>${r.location}</td><td>${r.task}</td><td>${r.labor}</td><td>${r.materialsSum}</td><td>${r.subtotal}</td><td>${r.vatRate}% (${r.vatAmount}€)</td><td>${r.total}</td><td>${r.invoice||''}</td></tr>`); }); const sum = rows.reduce((s,r)=> s + (parseFloat(r.total)||0), 0).toFixed(2); w.document.write(`<tfoot><tr><td colspan="11" style="text-align:right"><strong>Σύνολο (€):</strong></td><td colspan="2"><strong>${sum}</strong></td></tr></tfoot>`); w.document.write('</tbody></table></body></html>'); w.document.close(); w.focus(); w.print(); }
-
-  function esc(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+  function printList(){ var w = window.open('','_blank'); var rows = filtered(); var style = 'body{font-family:system-ui,Segoe UI,Arial;padding:24px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px} th{background:#f3f4f6}'; w.document.write('<html><head><title>Εκτύπωση</title><style>'+style+'</style></head><body>'); w.document.write('<h2>Λίστα Δουλειών</h2>'); w.document.write('<table><thead><tr><th>Ημερομηνία</th><th>Έναρξη</th><th>Λήξη</th><th>Ώρες</th><th>Πελάτης</th><th>Τοποθεσία</th><th>Εργασίες</th><th>Εργασία (€)</th><th>Υλικά (€)</th><th>Υποσύνολο</th><th>ΦΠΑ</th><th>Σύνολο</th><th>Παραστ.</th></tr></thead><tbody>'); rows.forEach(function(r){ w.document.write('<tr><td>'+r.date+'</td><td>'+(r.startTime||'')+'</td><td>'+(r.endTime||'')+'</td><td>'+r.hours+'</td><td>'+r.client+'</td><td>'+r.location+'</td><td>'+r.task+'</td><td>'+r.labor+'</td><td>'+r.materialsSum+'</td><td>'+r.subtotal+'</td><td>'+r.vatRate+'% ('+r.vatAmount+'€)</td><td>'+r.total+'</td><td>'+(r.invoice||'')+'</td></tr>'); }); var sum = rows.reduce(function(s,r){ return s + (parseFloat(r.total)||0); }, 0).toFixed(2); w.document.write('<tfoot><tr><td colspan="11" style="text-align:right"><strong>Σύνολο (€):</strong></td><td colspan="2"><strong>'+sum+'</strong></td></tr></tfoot>'); w.document.write('</tbody></table></body></html>'); w.document.close(); w.focus(); w.print(); }
 
   // === Events ===
-  $$('#addMat').addEventListener('click', ()=> addMaterialRow());
-  $$('#clearMat').addEventListener('click', ()=> { if(confirm('Καθαρισμός όλων των υλικών;')){ materialsTBody.innerHTML=''; addMaterialRow(); recalcMaterials(); }});
+  $$('#addMat').addEventListener('click', function(){ addMaterialRow(); });
+  $$('#clearMat').addEventListener('click', function(){ if(confirm('Καθαρισμός όλων των υλικών;')){ materialsTBody.innerHTML=''; addMaterialRow(); recalcMaterials(); }});
   $$('#addBtn').addEventListener('click', add);
   $$('#updateBtn').addEventListener('click', update);
   $$('#clearFormBtn').addEventListener('click', clearForm);
   $$('#applyFilters').addEventListener('click', applyFilters);
   $$('#resetFilters').addEventListener('click', resetFilters);
   $$('#exportCsv').addEventListener('click', exportCsv);
-  $$('#printList').addEventListener('click', printList);
-  $$('#backupJson').addEventListener('click', backupJson);
-  $$('#restoreJson').addEventListener('change', restoreJson);
-
-  // Init
-  addMaterialRow();
-  render();
-</script>
+  $$('#printList').addEve
 </body>
 </html>
