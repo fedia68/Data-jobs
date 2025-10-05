@@ -22,7 +22,7 @@
     button:hover{background:#10192e}
     .primary{background:linear-gradient(90deg,#22d3ee,#7c9cf1);border:none;color:#041016}
     table{width:100%;border-collapse:collapse}
-    th,td{border-bottom:1px solid var(--border);padding:6px 8px;font-size:14px;text-align:left}
+    th,td{border-bottom:1px solid var(--border);padding:6px 8px;font-size:14px;text-align:left;vertical-align:top}
     th{color:var(--muted);background:#0c1322;position:sticky;top:0}
     .right{text-align:right}
     .pill{font-size:12px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
@@ -33,12 +33,12 @@
 <header>
   <div class="container">
     <h1>📒 Καταγραφή Δουλειών — Υλικά & Ώρες</h1>
-    <div class="sub">Ώρα έναρξης/λήξης, αυτόματος υπολογισμός ωρών, υλικά ανά γραμμή, σύνολα & ΦΠΑ.</div>
+    <div class="sub">Ώρα έναρξης/λήξης (αυτόματες ώρες), αποθήκευση πελατών/τοποθεσιών, υλικά ανά γραμμή, ΦΠΑ, σύνολα.</div>
   </div>
 </header>
 
 <main class="container">
-  <section class="card">
+  <section class="card" id="formCard">
     <div class="row">
       <div style="grid-column:span 3">
         <label>Ημερομηνία</label>
@@ -59,12 +59,26 @@
 
       <div style="grid-column:span 6">
         <label>Πελάτης</label>
-        <input type="text" id="client" placeholder="Όνομα πελάτη">
+        <div style="display:flex; gap:8px">
+          <input type="text" id="client" list="clientsList" placeholder="Όνομα πελάτη" style="flex:1">
+          <button type="button" id="saveClient" title="Αποθήκευση πελάτη">⭐</button>
+          <button type="button" id="manageClients" title="Διαχείριση πελατών">🗂️</button>
+        </div>
       </div>
+
       <div style="grid-column:span 6">
         <label>Τοποθεσία</label>
-        <input type="text" id="location" placeholder="Διεύθυνση ή περιοχή">
+        <div style="display:flex; gap:8px">
+          <input type="text" id="location" list="locationsList" placeholder="Διεύθυνση ή περιοχή" style="flex:1">
+          <button type="button" id="saveLocation" title="Αποθήκευση τοποθεσίας">⭐</button>
+          <button type="button" id="manageLocations" title="Διαχείριση τοποθεσιών">🗂️</button>
+        </div>
       </div>
+
+      <!-- λίστες για autocomplete -->
+      <datalist id="clientsList"></datalist>
+      <datalist id="locationsList"></datalist>
+
       <div style="grid-column:span 12">
         <label>Εργασίες (περιγραφή)</label>
         <textarea id="task" placeholder="Σύντομη περιγραφή εργασιών..."></textarea>
@@ -139,35 +153,6 @@
 
   <!-- Λίστα -->
   <section class="card">
-    <div class="row">
-      <div style="grid-column:span 3">
-        <label>Από</label>
-        <input type="date" id="filterFrom">
-      </div>
-      <div style="grid-column:span 3">
-        <label>Έως</label>
-        <input type="date" id="filterTo">
-      </div>
-      <div style="grid-column:span 6">
-	   <label>Πελάτης</label>
-		<div style="display:flex; gap:8px">
-		<input type="text" id="client" list="clientsList" placeholder="Όνομα πελάτη" style="flex:1">
-		<button type="button" id="saveClient" title="Αποθήκευση πελάτη">⭐</button>
-		<button type="button" id="manageClients" title="Διαχείριση πελατών">🗂️</button>
-	   </div>
-	  </div>
-      <div style="grid-column:span 6">
-	<label>Τοποθεσία</label>
-	 <div style="display:flex; gap:8px">
-		<input type="text" id="location" list="locationsList" placeholder="Διεύθυνση ή περιοχή" style="flex:1">
-		<button type="button" id="saveLocation" title="Αποθήκευση τοποθεσίας">⭐</button>
-		<button type="button" id="manageLocations" title="Διαχείριση τοποθεσιών">🗂️</button>
-	 </div>
-	</div>
-	<datalist id="clientsList"></datalist>
-	<datalist id="locationsList"></datalist>
-    </div>
-
     <div style="overflow:auto;max-height:55vh;margin-top:8px;border:1px solid var(--border);border-radius:10px">
       <table id="table">
         <thead>
@@ -200,11 +185,12 @@
 </main>
 
 <script>
-  // -------- Helpers
+  // ---------------- Helpers
   function $(s){return document.querySelector(s);}
   function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
   function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
   function money(v){return num(v).toFixed(2);}
+  function setStatus(m){$('#status').textContent=m;}
 
   var fields = {
     date:$('#date'), startTime:$('#startTime'), endTime:$('#endTime'), hours:$('#hours'),
@@ -212,20 +198,53 @@
     labor:$('#labor'), vatRate:$('#vatRate'), subtotal:$('#subtotal'),
     vatAmount:$('#vatAmount'), grandTotal:$('#grandTotal'), invoice:$('#invoice')
   };
-  var statusEl=$('#status'), tbody=$('#table tbody'),
+  var tbody=$('#table tbody'),
       matBody=$('#materialsTable tbody'), materialsSumEl=$('#materialsSum'),
       countEl=$('#count'), sumEl=$('#sum');
-  var STORAGE_KEY='jobs_simple_v1';
-  var data=load(); var editingIndex=null;
 
-  fields.date.valueAsDate=new Date();
+  // ---------------- Local Storage keys
+  var STORAGE_KEY='jobs_v1';
+  var LS_CLIENTS='saved_clients';
+  var LS_LOCATIONS='saved_locations';
+
+  var data = loadJobs();
+  var saved = {clients:[], locations:[]};
+  loadSavedLists();
+
+  // ---------------- Init values
+  fields.date.valueAsDate = new Date();
   fields.vatRate.value = localStorage.getItem('vat_default') || 24;
 
-  function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
-  function save(){localStorage.setItem(STORAGE_KEY, JSON.stringify(data));}
-  function setStatus(msg){statusEl.textContent=msg;}
+  function loadJobs(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return [];} }
+  function saveJobs(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-  // -------- Times → Hours
+  function loadSavedLists(){
+    try{ saved.clients=JSON.parse(localStorage.getItem(LS_CLIENTS)||'[]'); }catch(e){ saved.clients=[]; }
+    try{ saved.locations=JSON.parse(localStorage.getItem(LS_LOCATIONS)||'[]'); }catch(e){ saved.locations=[]; }
+    updateDatalists();
+  }
+  function saveSavedLists(){
+    localStorage.setItem(LS_CLIENTS, JSON.stringify(saved.clients));
+    localStorage.setItem(LS_LOCATIONS, JSON.stringify(saved.locations));
+  }
+  function uniquePush(arr, value){
+    var v=String(value||'').trim(); if(!v) return;
+    for(var i=0;i<arr.length;i++){ if(arr[i].toLowerCase()===v.toLowerCase()) return; }
+    arr.push(v);
+  }
+  function updateDatalists(){
+    var cl = $('#clientsList'), ll = $('#locationsList'); if(!cl||!ll) return;
+    cl.innerHTML=''; ll.innerHTML='';
+    for(var i=0;i<saved.clients.length;i++){ var o=document.createElement('option'); o.value=saved.clients[i]; cl.appendChild(o); }
+    for(var j=0;j<saved.locations.length;j++){ var p=document.createElement('option'); p.value=saved.locations[j]; ll.appendChild(p); }
+  }
+  function rememberCurrentValues(){
+    uniquePush(saved.clients, fields.client.value);
+    uniquePush(saved.locations, fields.location.value);
+    saveSavedLists(); updateDatalists();
+  }
+
+  // ---------------- Times → Hours
   function timeToMin(t){if(!t)return null; var p=t.split(':'),h=parseInt(p[0],10),m=parseInt(p[1],10); return h*60+m;}
   function minToHours(m){return (m/60).toFixed(2);}
   function calcHours(){var s=timeToMin(fields.startTime.value), e=timeToMin(fields.endTime.value); if(s==null||e==null)return; var d=e-s; if(d<0)d+=24*60; fields.hours.value=minToHours(d);}
@@ -233,7 +252,7 @@
   document.getElementById('startTime').addEventListener('input',function(){calcHours(); recalcTotals();});
   document.getElementById('endTime').addEventListener('input',function(){calcHours(); recalcTotals();});
 
-  // -------- Materials
+  // ---------------- Materials
   function bindMatRow(tr){
     var inputs = tr.querySelectorAll('input');
     for(var i=0;i<inputs.length;i++){ inputs[i].addEventListener('input', recalcMaterials); }
@@ -287,7 +306,7 @@
     recalcTotals();
   }
 
-  // -------- Totals & VAT
+  // ---------------- Totals & VAT
   function recalcTotals(){
     var labor=num(fields.labor.value);
     var mats=num(materialsSumEl.textContent);
@@ -302,7 +321,28 @@
   document.getElementById('labor').addEventListener('input', function(){recalcMaterials();});
   document.getElementById('vatRate').addEventListener('input', function(){recalcMaterials();});
 
-  // -------- CRUD
+  // ---------------- Clients/Locations quick actions
+  function rememberClient(){ uniquePush(saved.clients, fields.client.value); saveSavedLists(); updateDatalists(); alert('Ο πελάτης αποθηκεύτηκε ✓'); }
+  function rememberLocation(){ uniquePush(saved.locations, fields.location.value); saveSavedLists(); updateDatalists(); alert('Η τοποθεσία αποθηκεύτηκε ✓'); }
+  function manageList(kind){
+    var arr = (kind==='clients') ? saved.clients.slice() : saved.locations.slice();
+    var title = (kind==='clients') ? 'Πελάτες' : 'Τοποθεσίες';
+    var txt = 'Επεξεργασία '+title+' (μία ανά γραμμή):\n\n' + arr.join('\n');
+    var res = prompt(txt, arr.join('\n'));
+    if(res===null) return;
+    var lines = res.split(/\r?\n/); var out=[];
+    for(var i=0;i<lines.length;i++){ var s=(lines[i]||'').trim(); if(s) out.push(s); }
+    if(kind==='clients') saved.clients = out; else saved.locations = out;
+    saveSavedLists(); updateDatalists(); alert('Αποθηκεύτηκε ✓');
+  }
+  document.getElementById('saveClient').addEventListener('click', rememberClient);
+  document.getElementById('saveLocation').addEventListener('click', rememberLocation);
+  document.getElementById('manageClients').addEventListener('click', function(){ manageList('clients'); });
+  document.getElementById('manageLocations').addEventListener('click', function(){ manageList('locations'); });
+
+  // ---------------- CRUD
+  var editingIndex = null;
+
   function clearForm(){
     fields.startTime.value=''; fields.endTime.value=''; fields.hours.value='';
     fields.client.value=''; fields.location.value=''; fields.task.value='';
@@ -338,9 +378,12 @@
     };
   }
   function validate(r){ if(!r.client) return 'Συμπληρώστε τον πελάτη'; if(!r.task) return 'Συμπληρώστε τις εργασίες'; return null; }
+
   function add(){
     var r=collect(); var err=validate(r); if(err){alert(err);return;}
-    data.push(r); save(); render(); clearForm(); setStatus('Προστέθηκε ✅');
+    // αποθήκευση πελάτη/τοποθεσίας για επόμενες προτάσεις
+    rememberCurrentValues();
+    data.push(r); saveJobs(); render(); clearForm(); setStatus('Προστέθηκε ✅');
   }
   function startEdit(id){
     var idx=-1; for(var i=0;i<data.length;i++){ if(data[i].id===id){idx=i;break;} }
@@ -358,31 +401,15 @@
     if(editingIndex==null) return;
     var r=collect(); r.id=data[editingIndex].id;
     var err=validate(r); if(err){alert(err);return;}
-    data[editingIndex]=r; save(); render(); clearForm(); setStatus('Ενημερώθηκε 💾');
+    data[editingIndex]=r; saveJobs(); render(); clearForm(); setStatus('Ενημερώθηκε 💾');
   }
   function removeItem(id){
     if(!confirm('Διαγραφή εγγραφής;')) return;
     var arr=[]; for(var i=0;i<data.length;i++){ if(data[i].id!==id) arr.push(data[i]); }
-    data=arr; save(); render(); setStatus('Διαγράφηκε 🗑️');
+    data=arr; saveJobs(); render(); setStatus('Διαγράφηκε 🗑️');
   }
 
-  // -------- List
-  function filtered(){
-    var fFrom=$('#filterFrom').value, fTo=$('#filterTo').value,
-        fClient=($('#filterClient').value||'').toLowerCase().trim(),
-        fText=($('#filterText').value||'').toLowerCase().trim();
-    var out=[];
-    for(var i=0;i<data.length;i++){
-      var r=data[i];
-      if(fFrom && r.date<fFrom) continue;
-      if(fTo && r.date>fTo) continue;
-      if(fClient && r.client.toLowerCase().indexOf(fClient)===-1) continue;
-      if(fText && (r.location+' '+r.task).toLowerCase().indexOf(fText)===-1) continue;
-      out.push(r);
-    }
-    out.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
-    return out;
-  }
+  // ---------------- List
   function addRow(r){
     var tr=document.createElement('tr');
     var cells=[r.date,r.startTime||'—',r.endTime||'—',r.hours,r.client,r.location,r.task,
@@ -397,24 +424,22 @@
   }
   function render(){
     tbody.innerHTML='';
-    var items=filtered();
-    for(var i=0;i<items.length;i++){ addRow(items[i]); }
-    countEl.textContent=items.length;
-    var s=0; for(var j=0;j<items.length;j++){ s+=num(items[j].total); }
-    sumEl.textContent=s.toFixed(2);
+    var s=0;
+    for(var i=0;i<data.length;i++){ addRow(data[i]); s+=num(data[i].total); }
+    countEl.textContent=data.length; sumEl.textContent=s.toFixed(2);
   }
 
-  // -------- Wire up buttons
+  // ---------------- Wire up
   document.getElementById('addMat').addEventListener('click', function(){ addMaterialRow(); });
   document.getElementById('clearMat').addEventListener('click', function(){
     if(confirm('Καθαρισμός όλων των υλικών;')){ matBody.innerHTML=''; addMaterialRow(); recalcMaterials(); }
   });
   document.getElementById('addBtn').addEventListener('click', add);
   document.getElementById('updateBtn').addEventListener('click', update);
-  document.getElementById('clearFormBtn').addEventListener('click', clearForm);
+  document.getElementById('clearFormBtn').addEventListener('click', function(){ clearForm(); });
 
-  // -------- Init
-  addMaterialRow();  // σημαντικό: δημιουργεί ΠΑΝΤΑ τουλάχιστον μία γραμμή
+  // ---------------- Start
+  addMaterialRow();     // τουλάχιστον 1 γραμμή υλικού
   render();
 </script>
 </body>
