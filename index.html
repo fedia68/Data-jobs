@@ -46,15 +46,15 @@
       </div>
       <div style="grid-column:span 3">
         <label>Ώρα Έναρξης</label>
-        <input type="time" id="startTime" step="60">
+        <input type="time" id="startTime" step="300">
       </div>
       <div style="grid-column:span 3">
-        <label>Ώρα Αποπεράτωσης</label>
-        <input type="time" id="endTime" step="60">
+        <label>Ώρα Λήξης</label>
+        <input type="time" id="endTime" step="300">
       </div>
       <div style="grid-column:span 3">
         <label>Ώρες Εργασίας (υπολογισμένο)</label>
-        <input type="number" id="hours" step="0.1" min="0" placeholder="π.χ. 2.5">
+        <input type="number" id="hours" step="0.25" min="0" placeholder="π.χ. 2.5">
       </div>
 
       <div style="grid-column:span 6">
@@ -207,12 +207,17 @@
     <!-- Γραμμή εργαλείων λίστας -->
     <div class="btns" style="margin-top:10px">
       <button id="exportCsv">⬇️ Εξαγωγή CSV</button>
-      <button id="printList">🖨️ Εκτύπωση (με φίλτρα)</button>
-      <button id="backupJson">💾 Αντίγραφο (JSON)</button>
+      <button id="printList">🖨️ Εκτύπωση</button>
+      <button id="backupJson">💾 Αντίγραφο JSON</button>
       <label class="pill" style="cursor:pointer">
         📤 Εισαγωγή JSON
         <input id="restoreJson" type="file" accept="application/json" style="display:none">
       </label>
+		<button id="pickBackupFolder">📁 Επιλογή φακέλου αντ/φων</button>
+		<label class="pill" style="display:flex;align-items:center;gap:6px">
+		  <input type="checkbox" id="autoSaveJson">
+		  AUTO JSON
+		</label>
 
       <span class="pill">Σύνολο εγγραφών: <span id="count">0</span> • Σύνολο €: <span id="sum">0.00</span></span>
     </div>
@@ -241,6 +246,108 @@
   var tbody=$('#table tbody'),
       matBody=$('#materialsTable tbody'), materialsSumEl=$('#materialsSum'),
       countEl=$('#count'), sumEl=$('#sum');
+
+  //----------------- JSON BACKUP
+  // ======== Auto JSON Backup to chosen folder (Chrome/Edge/Android Chrome) ========
+var backupDirHandle = null;
+var AUTO_FLAG_KEY = 'auto_json_backup_enabled';
+
+// --- Μικρό IndexedDB wrapper για αποθήκευση του handle (ώστε να θυμόμαστε τον φάκελο)
+var DB_NAME = 'jobs_fs_handles', STORE = 'handles';
+function idbOpen(){ return new Promise(function(res,rej){
+  var r = indexedDB.open(DB_NAME,1);
+  r.onupgradeneeded = function(ev){ ev.target.result.createObjectStore(STORE); };
+  r.onsuccess = function(ev){ res(ev.target.result); };
+  r.onerror = function(ev){ rej(ev.target.error); };
+});}
+function idbGet(key){ return idbOpen().then(function(db){ return new Promise(function(res,rej){
+  var tx=db.transaction(STORE,'readonly'); var st=tx.objectStore(STORE);
+  var r=st.get(key); r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); };
+});});}
+function idbSet(key,val){ return idbOpen().then(function(db){ return new Promise(function(res,rej){
+  var tx=db.transaction(STORE,'readwrite'); var st=tx.objectStore(STORE);
+  var r=st.put(val,key); r.onsuccess=function(){ res(); }; r.onerror=function(){ rej(r.error); };
+});});}
+function idbDel(key){ return idbOpen().then(function(db){ return new Promise(function(res,rej){
+  var tx=db.transaction(STORE,'readwrite'); var st=tx.objectStore(STORE);
+  var r=st.delete(key); r.onsuccess=function(){ res(); }; r.onerror=function(){ rej(r.error); };
+});});}
+
+// --- Έλεγχος υποστήριξης
+function fsSupported(){ return !!(window.showDirectoryPicker); }
+
+// --- Ζήτα φάκελο από τον χρήστη
+async function pickBackupFolder(){
+  if(!fsSupported()){ alert('Ο browser δεν υποστηρίζει αποθήκευση σε φάκελο (File System Access API). Χρησιμοποίησε Chrome/Edge.'); return; }
+  try{
+    const dir = await window.showDirectoryPicker({ mode:'readwrite' });
+    backupDirHandle = dir;
+    await idbSet('backupDir', dir);
+    setStatus('Επιλέχθηκε φάκελος αντιγράφων ✓');
+  }catch(e){
+    console.warn('pick dir cancelled/error', e);
+  }
+}
+
+// --- Δοκίμασε να ανακτήσεις απο παλιότερη επιλογή φακέλου
+async function restoreBackupFolderHandle(){
+  if(!fsSupported()) return;
+  try{
+    const h = await idbGet('backupDir');
+    if(!h) return;
+    // Έλεγχος άδειας
+    const perm = await h.queryPermission({mode:'readwrite'});
+    if(perm === 'granted'){
+      backupDirHandle = h;
+    }else{
+      const req = await h.requestPermission({mode:'readwrite'});
+      if(req === 'granted'){ backupDirHandle = h; }
+      else { console.log('Permission not granted, disabling auto save'); }
+    }
+  }catch(e){ console.warn('restore handle failed', e); }
+}
+
+// --- Αποθήκευση αρχείου jobs-backup.json στον επιλεγμένο φάκελο
+async function saveJsonBackupNow(){
+  try{
+    if(!backupDirHandle) return false;
+    const fileName = 'jobs-backup.json'; // σταθερό όνομα (πάντα overwrite)
+    const fileHandle = await backupDirHandle.getFileHandle(fileName, { create:true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(new Blob([ JSON.stringify(data, null, 2) ], { type:'application/json'}));
+    await writable.close();
+    return true;
+  }catch(e){
+    console.error('auto backup error', e);
+    return false;
+  }
+}
+
+// --- Trigger αυτόματης αποθήκευσης όταν αλλάζουν τα δεδομένα
+async function tryAutoBackup(){
+  var on = !!document.getElementById('autoSaveJson').checked;
+  if(!on) return;
+  if(!fsSupported()){ return; }
+  if(!backupDirHandle){ await restoreBackupFolderHandle(); }
+  const ok = await saveJsonBackupNow();
+  if(ok){ setStatus('Αυτόματο backup JSON ✓'); }
+}
+
+// --- UI bindings
+document.addEventListener('DOMContentLoaded', function(){
+  // επαναφορά handle αν υπάρχει
+  restoreBackupFolderHandle();
+
+  // αρχική κατάσταση checkbox
+  var auto = localStorage.getItem(AUTO_FLAG_KEY)==='1';
+  var autoChk = document.getElementById('autoSaveJson');
+  if(autoChk){ autoChk.checked = auto; autoChk.addEventListener('change', function(){
+    localStorage.setItem(AUTO_FLAG_KEY, this.checked?'1':'0');
+    if(this.checked){ tryAutoBackup(); }
+  });}
+  var pickBtn = document.getElementById('pickBackupFolder');
+  if(pickBtn){ pickBtn.addEventListener('click', pickBackupFolder); }
+});
 
   // ---------------- Local Storage keys
   var STORAGE_KEY='jobs_v2';
@@ -421,7 +528,7 @@
   function add(){
     var r=collect(); var err=validate(r); if(err){alert(err);return;}
     rememberCurrentValues(); // αποθήκευση πελάτη/τοποθεσίας
-    data.push(r); saveJobs(); render(); setStatus('Προστέθηκε ✅'); clearForm();
+    data.push(r); saveJobs(); render(); setStatus('Προστέθηκε ✅'); tryAutoBackup(); clearForm();
   }
   function startEdit(id){
     var idx=-1; for(var i=0;i<data.length;i++){ if(data[i].id===id){idx=i;break;} }
@@ -439,12 +546,12 @@
     if(editingIndex==null) return;
     var r=collect(); r.id=data[editingIndex].id;
     var err=validate(r); if(err){alert(err);return;}
-    data[editingIndex]=r; saveJobs(); render(); clearForm(); setStatus('Ενημερώθηκε 💾');
+    data[editingIndex]=r; saveJobs(); render(); clearForm(); setStatus('Ενημερώθηκε 💾'); tryAutoBackup();
   }
   function removeItem(id){
     if(!confirm('Διαγραφή εγγραφής;')) return;
     var arr=[]; for(var i=0;i<data.length;i++){ if(data[i].id!==id) arr.push(data[i]); }
-    data=arr; saveJobs(); render(); setStatus('Διαγράφηκε 🗑️');
+    data=arr; saveJobs(); render(); setStatus('Διαγράφηκε 🗑️'); tryAutoBackup();
   }
 
   // ---------------- Filters
@@ -521,7 +628,7 @@
   }
   function backupJson() {
     downloadFile('jobs-backup.json','application/json', JSON.stringify(data, null, 2));
-    setStatus('Αντίγραφο αποθηκεύτηκε ✓');
+    setStatus('Αντίγραφο αποθηκεύτηκε ✓'); tryAutoBackup();
   }
   function restoreJson(ev) {
     var f = ev.target.files && ev.target.files[0]; if (!f) return;
