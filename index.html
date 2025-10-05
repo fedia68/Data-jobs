@@ -8,7 +8,7 @@
     :root{--bg:#0f172a;--panel:#111827;--panel2:#0b1220;--text:#e5e7eb;--muted:#9ca3af;--accent:#22d3ee;--border:#1f2937}
     *{box-sizing:border-box}
     body{margin:0;background:#0f172a;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{position:sticky;top:0;background:#0f172a;border-bottom:1px solid var(--border)}
+    header{position:sticky;top:0;background:#0f172a;border-bottom:1px solid var(--border);z-index:5}
     .container{max-width:1100px;margin:0 auto;padding:14px}
     h1{margin:6px 0 2px;font-size:22px}
     .sub{color:var(--muted);font-size:13px}
@@ -178,7 +178,16 @@
       </table>
     </div>
 
-    <div class="btns">
+    <!-- Γραμμή εργαλείων λίστας -->
+    <div class="btns" style="margin-top:10px">
+      <button id="exportCsv">⬇️ Εξαγωγή CSV</button>
+      <button id="printList">🖨️ Εκτύπωση</button>
+      <button id="backupJson">💾 Αντίγραφο (JSON)</button>
+      <label class="pill" style="cursor:pointer">
+        📤 Εισαγωγή JSON
+        <input id="restoreJson" type="file" accept="application/json" style="display:none">
+      </label>
+
       <span class="pill">Σύνολο εγγραφών: <span id="count">0</span> • Σύνολο €: <span id="sum">0.00</span></span>
     </div>
   </section>
@@ -243,6 +252,24 @@
     uniquePush(saved.locations, fields.location.value);
     saveSavedLists(); updateDatalists();
   }
+  function rememberClient(){ uniquePush(saved.clients, fields.client.value); saveSavedLists(); updateDatalists(); alert('Ο πελάτης αποθηκεύτηκε ✓'); }
+  function rememberLocation(){ uniquePush(saved.locations, fields.location.value); saveSavedLists(); updateDatalists(); alert('Η τοποθεσία αποθηκεύτηκε ✓'); }
+  function manageList(kind){
+    var arr = (kind==='clients') ? saved.clients.slice() : saved.locations.slice();
+    var title = (kind==='clients') ? 'Πελάτες' : 'Τοποθεσίες';
+    var txt = 'Επεξεργασία '+title+' (μία ανά γραμμή):\\n\\n' + arr.join('\\n');
+    var res = prompt(txt, arr.join('\\n'));
+    if(res===null) return;
+    var lines = res.split(/\\r?\\n/); var out=[];
+    for(var i=0;i<lines.length;i++){ var s=(lines[i]||'').trim(); if(s) out.push(s); }
+    if(kind==='clients') saved.clients = out; else saved.locations = out;
+    saveSavedLists(); updateDatalists(); alert('Αποθηκεύτηκε ✓');
+  }
+
+  document.getElementById('saveClient').addEventListener('click', rememberClient);
+  document.getElementById('saveLocation').addEventListener('click', rememberLocation);
+  document.getElementById('manageClients').addEventListener('click', function(){ manageList('clients'); });
+  document.getElementById('manageLocations').addEventListener('click', function(){ manageList('locations'); });
 
   // ---------------- Times → Hours
   function timeToMin(t){if(!t)return null; var p=t.split(':'),h=parseInt(p[0],10),m=parseInt(p[1],10); return h*60+m;}
@@ -321,25 +348,6 @@
   document.getElementById('labor').addEventListener('input', function(){recalcMaterials();});
   document.getElementById('vatRate').addEventListener('input', function(){recalcMaterials();});
 
-  // ---------------- Clients/Locations quick actions
-  function rememberClient(){ uniquePush(saved.clients, fields.client.value); saveSavedLists(); updateDatalists(); alert('Ο πελάτης αποθηκεύτηκε ✓'); }
-  function rememberLocation(){ uniquePush(saved.locations, fields.location.value); saveSavedLists(); updateDatalists(); alert('Η τοποθεσία αποθηκεύτηκε ✓'); }
-  function manageList(kind){
-    var arr = (kind==='clients') ? saved.clients.slice() : saved.locations.slice();
-    var title = (kind==='clients') ? 'Πελάτες' : 'Τοποθεσίες';
-    var txt = 'Επεξεργασία '+title+' (μία ανά γραμμή):\n\n' + arr.join('\n');
-    var res = prompt(txt, arr.join('\n'));
-    if(res===null) return;
-    var lines = res.split(/\r?\n/); var out=[];
-    for(var i=0;i<lines.length;i++){ var s=(lines[i]||'').trim(); if(s) out.push(s); }
-    if(kind==='clients') saved.clients = out; else saved.locations = out;
-    saveSavedLists(); updateDatalists(); alert('Αποθηκεύτηκε ✓');
-  }
-  document.getElementById('saveClient').addEventListener('click', rememberClient);
-  document.getElementById('saveLocation').addEventListener('click', rememberLocation);
-  document.getElementById('manageClients').addEventListener('click', function(){ manageList('clients'); });
-  document.getElementById('manageLocations').addEventListener('click', function(){ manageList('locations'); });
-
   // ---------------- CRUD
   var editingIndex = null;
 
@@ -409,7 +417,7 @@
     data=arr; saveJobs(); render(); setStatus('Διαγράφηκε 🗑️');
   }
 
-  // ---------------- List
+  // ---------------- List & toolbar
   function addRow(r){
     var tr=document.createElement('tr');
     var cells=[r.date,r.startTime||'—',r.endTime||'—',r.hours,r.client,r.location,r.task,
@@ -429,6 +437,62 @@
     countEl.textContent=data.length; sumEl.textContent=s.toFixed(2);
   }
 
+  function downloadFile(filename, mime, content) {
+    var blob = new Blob([content], {type: mime});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 0);
+  }
+  function csvEscape(s) {
+    s = String(s == null ? '' : s);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  function exportCsv() {
+    var rows = [['Ημερομηνία','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Πελάτης','Τοποθεσία','Εργασίες','Εργασία (€)','Υλικά (€)','Υποσύνολο (€)','ΦΠΑ (%)','ΦΠΑ (€)','Σύνολο (€)','Παραστατικό','Υλικά (αναλυτικά)']];
+    for (var i=0;i<data.length;i++) {
+      var r = data[i];
+      var mats = (r.materials||[]).map(function(m){
+        return m.desc + ' x' + m.qty + ' ' + m.unit + ' @' + money(m.price) + '€ = ' + money(m.qty*m.price) + '€';
+      }).join(' | ');
+      rows.push([r.date,r.startTime||'',r.endTime||'',r.hours,r.client,r.location,r.task,r.labor,r.materialsSum,r.subtotal,r.vatRate,r.vatAmount,r.total,r.invoice||'',mats]);
+    }
+    var csv = rows.map(function(row){ return row.map(csvEscape).join(','); }).join('\n');
+    downloadFile('δουλειές.csv','text/csv;charset=utf-8;', csv);
+    setStatus('Εξαγωγή CSV ✓');
+  }
+  function backupJson() {
+    downloadFile('jobs-backup.json','application/json', JSON.stringify(data, null, 2));
+    setStatus('Αντίγραφο αποθηκεύτηκε ✓');
+  }
+  function restoreJson(ev) {
+    var f = ev.target.files && ev.target.files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var arr = JSON.parse(reader.result);
+        if (!Array.isArray(arr)) throw new Error('bad');
+        data = arr; saveJobs(); render(); setStatus('Επαναφορά OK ✓');
+      } catch(e){ alert('Μη έγκυρο JSON'); }
+    };
+    reader.readAsText(f);
+    ev.target.value = '';
+  }
+  function printList() {
+    var w = window.open('', '_blank');
+    var style = 'body{font-family:system-ui,Segoe UI,Arial;padding:24px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px} th{background:#f3f4f6}';
+    w.document.write('<html><head><title>Εκτύπωση</title><style>'+style+'</style></head><body>');
+    w.document.write('<h2>Λίστα Δουλειών</h2>');
+    w.document.write('<table><thead><tr><th>Ημερομηνία</th><th>Έναρξη</th><th>Λήξη</th><th>Ώρες</th><th>Πελάτης</th><th>Τοποθεσία</th><th>Εργασίες</th><th>Εργασία (€)</th><th>Υλικά (€)</th><th>Υποσύνολο</th><th>ΦΠΑ</th><th>Σύνολο</th><th>Παραστ.</th></tr></thead><tbody>');
+    for (var i=0;i<data.length;i++){
+      var r=data[i];
+      w.document.write('<tr><td>'+r.date+'</td><td>'+(r.startTime||'')+'</td><td>'+(r.endTime||'')+'</td><td>'+r.hours+'</td><td>'+r.client+'</td><td>'+r.location+'</td><td>'+r.task+'</td><td>'+r.labor+'</td><td>'+r.materialsSum+'</td><td>'+r.subtotal+'</td><td>'+r.vatRate+'% ('+r.vatAmount+'€)</td><td>'+r.total+'</td><td>'+(r.invoice||'')+'</td></tr>');
+    }
+    var s=0; for (var j=0;j<data.length;j++){ s += num(data[j].total); }
+    w.document.write('<tfoot><tr><td colspan="11" style="text-align:right"><b>Σύνολο (€):</b></td><td colspan="2"><b>'+s.toFixed(2)+'</b></td></tr></tfoot>');
+    w.document.write('</tbody></table></body></html>');
+    w.document.close(); w.focus(); w.print();
+  }
+
   // ---------------- Wire up
   document.getElementById('addMat').addEventListener('click', function(){ addMaterialRow(); });
   document.getElementById('clearMat').addEventListener('click', function(){
@@ -437,6 +501,11 @@
   document.getElementById('addBtn').addEventListener('click', add);
   document.getElementById('updateBtn').addEventListener('click', update);
   document.getElementById('clearFormBtn').addEventListener('click', function(){ clearForm(); });
+
+  document.getElementById('exportCsv').addEventListener('click', exportCsv);
+  document.getElementById('printList').addEventListener('click', printList);
+  document.getElementById('backupJson').addEventListener('click', backupJson);
+  document.getElementById('restoreJson').addEventListener('change', restoreJson);
 
   // ---------------- Start
   addMaterialRow();     // τουλάχιστον 1 γραμμή υλικού
