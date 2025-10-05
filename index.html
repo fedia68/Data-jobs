@@ -1,50 +1,43 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Καταγραφή Δουλειών — Υλικά, ΦΠΑ & Ώρες (PWA)</title>
-  <meta name="theme-color" content="#22d3ee">
-  <link rel="manifest" href="manifest.webmanifest">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Καταγραφή Δουλειών — Υλικά & Ώρες</title>
   <style>
-    :root{--bg:#0f172a;--panel:#111827;--panel2:#0b1220;--text:#e5e7eb;--muted:#9ca3af;--accent:#22d3ee;--accent2:#a78bfa;--ok:#34d399;--warn:#fbbf24;--border:#1f2937}
+    :root{--bg:#0f172a;--panel:#111827;--panel2:#0b1220;--text:#e5e7eb;--muted:#9ca3af;--accent:#22d3ee;--border:#1f2937}
     *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(120deg,var(--bg),#0b1022 60%,#0a0f1c);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{position:sticky;top:0;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);z-index:5}
-    .container{max-width:1200px;margin:0 auto;padding:16px}
-    h1{font-size:clamp(20px,3vw,28px);margin:8px 0 4px}
-    .sub{color:var(--muted);font-size:13px;margin-bottom:8px}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-    input,textarea,select{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;outline:none}
-    input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.15)}
-    textarea{min-height:70px;resize:vertical}
-    label{display:block;font-size:12px;color:var(--muted);margin:6px 0 6px 2px}
+    body{margin:0;background:#0f172a;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    header{position:sticky;top:0;background:#0f172a;border-bottom:1px solid var(--border)}
+    .container{max-width:1100px;margin:0 auto;padding:14px}
+    h1{margin:6px 0 2px;font-size:22px}
+    .sub{color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin:4px 0}
+    input,textarea{width:100%;background:#0b1220;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 10px;font-size:14px}
+    textarea{min-height:64px;resize:vertical}
     .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    button{cursor:pointer;border:1px solid var(--border);background:#0b1220;color:var(--text);padding:10px 14px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-    button:hover{background:#0f172a} button:active{transform:translateY(1px)}
-    .primary{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#041016}
-    .ok{background:linear-gradient(90deg,var(--ok),#60a5fa);border:none;color:#05140a}
-    .warn{background:linear-gradient(90deg,var(--warn),#fb7185);border:none;color:#140b05}
-    .ghost{background:transparent;border:1px dashed var(--border)}
+    button{cursor:pointer;background:#0b1220;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:600}
+    button:hover{background:#10192e}
+    .primary{background:linear-gradient(90deg,#22d3ee,#7c9cf1);border:none;color:#041016}
     table{width:100%;border-collapse:collapse}
-    th,td{border-bottom:1px solid var(--border);padding:8px 10px;font-size:14px;text-align:left;vertical-align:top}
-    th{color:var(--muted);position:sticky;top:0;background:#0c1322;z-index:3}
-    tbody tr:hover{background:rgba(255,255,255,.02)}
-    .pill{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
-    .right{text-align:right}.nowrap{white-space:nowrap}
+    th,td{border-bottom:1px solid var(--border);padding:6px 8px;font-size:14px;text-align:left}
+    th{color:var(--muted);background:#0c1322;position:sticky;top:0}
+    .right{text-align:right}
+    .pill{font-size:12px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;color:var(--muted)}
     @media(max-width:900px){.row{grid-template-columns:repeat(6,1fr)}}
   </style>
 </head>
 <body>
 <header>
   <div class="container">
-    <h1>📒 Καταγραφή Δουλειών — Υλικά, ΦΠΑ & Ώρες (Offline PWA)</h1>
-    <div class="sub">Ώρα έναρξης/αποπεράτωσης με αυτόματο υπολογισμό ωρών, υλικά, ΦΠΑ, CSV, offline & εγκατάσταση.</div>
+    <h1>📒 Καταγραφή Δουλειών — Υλικά & Ώρες</h1>
+    <div class="sub">Ώρα έναρξης/λήξης, αυτόματος υπολογισμός ωρών, υλικά ανά γραμμή, σύνολα & ΦΠΑ.</div>
   </div>
 </header>
 
-<main class="container" id="app">
+<main class="container">
   <section class="card">
     <div class="row">
       <div style="grid-column:span 3">
@@ -72,7 +65,7 @@
         <label>Τοποθεσία</label>
         <input type="text" id="location" placeholder="Διεύθυνση ή περιοχή">
       </div>
-      <div style="grid-column:span 6">
+      <div style="grid-column:span 12">
         <label>Εργασίες (περιγραφή)</label>
         <textarea id="task" placeholder="Σύντομη περιγραφή εργασιών..."></textarea>
       </div>
@@ -80,32 +73,32 @@
       <!-- Υλικά -->
       <div style="grid-column:span 12">
         <label>Υλικά (αναλυτικά)</label>
-        <div style="overflow:auto;border:1px solid var(--border);border-radius:12px;">
+        <div style="overflow:auto;border:1px solid var(--border);border-radius:10px;">
           <table id="materialsTable">
             <thead>
               <tr>
-                <th style="width:32px">#</th>
+                <th style="width:28px">#</th>
                 <th>Περιγραφή</th>
-                <th class="nowrap">Ποσότητα</th>
-                <th class="nowrap">Μονάδα</th>
-                <th class="nowrap right">Τιμή Μον. (€)</th>
-                <th class="nowrap right">Γραμμή (€)</th>
+                <th>Ποσ.</th>
+                <th>Μονάδα</th>
+                <th class="right">Τιμή Μον. (€)</th>
+                <th class="right">Γραμμή (€)</th>
                 <th>Ενέργεια</th>
               </tr>
             </thead>
             <tbody></tbody>
             <tfoot>
               <tr>
-                <td colspan="5" class="right"><strong>Σύνολο Υλικών (€)</strong></td>
+                <td colspan="5" class="right"><b>Σύνολο Υλικών (€)</b></td>
                 <td class="right"><span id="materialsSum">0.00</span></td>
                 <td></td>
               </tr>
             </tfoot>
           </table>
         </div>
-        <div class="btns" style="margin-top:8px">
-          <button id="addMat" class="ghost">➕ Γραμμή υλικού</button>
-          <button id="clearMat" class="ghost">🧹 Καθαρισμός υλικών</button>
+        <div class="btns" style="margin-top:6px">
+          <button id="addMat">➕ Γραμμή υλικού</button>
+          <button id="clearMat">🧹 Καθαρισμός υλικών</button>
         </div>
       </div>
 
@@ -115,7 +108,7 @@
         <input type="number" id="labor" step="0.01" min="0" placeholder="0.00">
       </div>
       <div style="grid-column:span 3">
-        <label>Συντελεστής ΦΠΑ (%)</label>
+        <label>ΦΠΑ (%)</label>
         <input type="number" id="vatRate" step="0.5" min="0" placeholder="24">
       </div>
       <div style="grid-column:span 3">
@@ -139,13 +132,13 @@
     <div class="btns">
       <button class="primary" id="addBtn">➕ Προσθήκη</button>
       <button id="updateBtn" style="display:none">💾 Ενημέρωση</button>
-      <button class="ghost" id="clearFormBtn">🧹 Εκκαθάριση φόρμας</button>
+      <button id="clearFormBtn">🧹 Εκκαθάριση φόρμας</button>
       <span class="pill" id="status">Έτοιμο</span>
     </div>
   </section>
 
   <!-- Λίστα -->
-  <section class="card" style="margin-top:12px">
+  <section class="card">
     <div class="row">
       <div style="grid-column:span 3">
         <label>Από</label>
@@ -164,19 +157,8 @@
         <input type="text" id="filterText" placeholder="λέξη-κλειδί">
       </div>
     </div>
-    <div class="btns">
-      <button id="applyFilters">🔎 Εφαρμογή φίλτρων</button>
-      <button id="resetFilters" class="ghost">♻️ Καθαρισμός φίλτρων</button>
-      <button id="exportCsv" class="ok">⬇️ Εξαγωγή CSV</button>
-      <button id="printList" class="warn">🖨️ Εκτύπωση</button>
-      <button id="backupJson" class="ghost">💾 Αντίγραφο (JSON)</button>
-      <label class="pill" style="cursor:pointer">📤 Εισαγωγή JSON
-        <input id="restoreJson" type="file" accept="application/json" style="display:none">
-      </label>
-      <span class="pill">Σύνολο εγγραφών: <span id="count">0</span> • Σύνολο €: <span id="sum">0.00</span></span>
-    </div>
 
-    <div style="overflow:auto;max-height:50vh;margin-top:8px;border:1px solid var(--border);border-radius:12px">
+    <div style="overflow:auto;max-height:55vh;margin-top:8px;border:1px solid var(--border);border-radius:10px">
       <table id="table">
         <thead>
           <tr>
@@ -200,156 +182,134 @@
         <tbody></tbody>
       </table>
     </div>
-  </section>
 
-  <div class="sub" style="text-align:center;padding:20px 0 40px">
-    Δεδομένα αποθηκεύονται τοπικά (localStorage). Αν αλλάξεις μόνο ώρα λήξης/έναρξης, οι ώρες υπολογίζονται αυτόματα (αν η λήξη είναι πριν από την έναρξη θεωρείται πέρασμα μεσάνυχτου).
-  </div>
+    <div class="btns">
+      <span class="pill">Σύνολο εγγραφών: <span id="count">0</span> • Σύνολο €: <span id="sum">0.00</span></span>
+    </div>
+  </section>
 </main>
 
 <script>
-  const $$ = s=>document.querySelector(s);
-  const $$$ = s=>Array.from(document.querySelectorAll(s));
+  // -------- Helpers
+  function $(s){return document.querySelector(s);}
+  function $all(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+  function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+  function money(v){return num(v).toFixed(2);}
 
-  const fields = {
-    date: $$('#date'), startTime: $$('#startTime'), endTime: $$('#endTime'),
-    hours: $$('#hours'), client: $$('#client'), location: $$('#location'),
-    task: $$('#task'), labor: $$('#labor'), vatRate: $$('#vatRate'),
-    subtotal: $$('#subtotal'), vatAmount: $$('#vatAmount'), grandTotal: $$('#grandTotal'),
-    invoice: $$('#invoice')
+  var fields = {
+    date:$('#date'), startTime:$('#startTime'), endTime:$('#endTime'), hours:$('#hours'),
+    client:$('#client'), location:$('#location'), task:$('#task'),
+    labor:$('#labor'), vatRate:$('#vatRate'), subtotal:$('#subtotal'),
+    vatAmount:$('#vatAmount'), grandTotal:$('#grandTotal'), invoice:$('#invoice')
   };
+  var statusEl=$('#status'), tbody=$('#table tbody'),
+      matBody=$('#materialsTable tbody'), materialsSumEl=$('#materialsSum'),
+      countEl=$('#count'), sumEl=$('#sum');
+  var STORAGE_KEY='jobs_simple_v1';
+  var data=load(); var editingIndex=null;
 
-  const statusEl = $$('#status');
-  const tbody = $$('#table tbody');
-  const materialsTBody = $$('#materialsTable tbody');
-  const materialsSumEl = $$('#materialsSum');
-  const countEl = $$('#count');
-  const sumEl = $$('#sum');
-  const STORAGE_KEY = 'jobs_v4_fix1';
-
-  let data = load();
-  let editingIndex = null;
-
-  // Defaults
-  fields.date.valueAsDate = new Date();
+  fields.date.valueAsDate=new Date();
   fields.vatRate.value = localStorage.getItem('vat_default') || 24;
 
-  function load(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){console.error(e);return[]} }
-  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-  function toNumber(v){ var n=parseFloat(v); return isNaN(n)?0:n; }
-  function money(v){ return (toNumber(v)).toFixed(2); }
-  function status(msg){ statusEl.textContent = msg; }
+  function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
+  function save(){localStorage.setItem(STORAGE_KEY, JSON.stringify(data));}
+  function setStatus(msg){statusEl.textContent=msg;}
 
-  // === ΩΡΕΣ ΑΠΟ start/end ===
-  function timeToMinutes(t){ if(!t) return null; var parts=t.split(':'); return parseInt(parts[0],10)*60+parseInt(parts[1],10); }
-  function minutesToHours(m){ return (m/60).toFixed(2); }
-  function calcHoursFromTimes(){
-    var s = timeToMinutes(fields.startTime.value);
-    var e = timeToMinutes(fields.endTime.value);
-    if(s==null || e==null) return; // χρειάζονται και τα δύο
-    var diff = e - s;
-    if(diff < 0) diff += 24*60; // πέρασμα μεσάνυχτου
-    fields.hours.value = minutesToHours(diff);
-  }
+  // -------- Times → Hours
+  function timeToMin(t){if(!t)return null; var p=t.split(':'),h=parseInt(p[0],10),m=parseInt(p[1],10); return h*60+m;}
+  function minToHours(m){return (m/60).toFixed(2);}
+  function calcHours(){var s=timeToMin(fields.startTime.value), e=timeToMin(fields.endTime.value); if(s==null||e==null)return; var d=e-s; if(d<0)d+=24*60; fields.hours.value=minToHours(d);}
 
-  ;['startTime','endTime'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ calcHoursFromTimes(); recalcTotals(); }); });
+  document.getElementById('startTime').addEventListener('input',function(){calcHours(); recalcTotals();});
+  document.getElementById('endTime').addEventListener('input',function(){calcHours(); recalcTotals();});
 
-  // ===== ΥΛΙΚΑ =====
+  // -------- Materials
   function bindMatRow(tr){
-    Array.prototype.forEach.call(tr.querySelectorAll('input'), function(inp){ inp.addEventListener('input', recalcMaterials); });
-    tr.querySelector('.del-row').addEventListener('click', function(){ tr.remove(); recalcMaterials(); });
+    var inputs = tr.querySelectorAll('input');
+    for(var i=0;i<inputs.length;i++){ inputs[i].addEventListener('input', recalcMaterials); }
+    tr.querySelector('.del-row').addEventListener('click', function(){ tr.parentNode.removeChild(tr); recalcMaterials(); renumberRows(); });
   }
-
+  function renumberRows(){
+    var rows = matBody.querySelectorAll('tr');
+    for(var i=0;i<rows.length;i++){ rows[i].firstChild.textContent = (i+1); }
+  }
   function addMaterialRow(row){
-    var tr = document.createElement('tr');
-    var idx = materialsTBody.children.length + 1;
-    var qty = row && row.qty != null ? row.qty : 1;
-    var unit = row && row.unit ? row.unit : '';
-    var price = row && row.price != null ? row.price : 0;
-    tr.innerHTML = ''+
-      '<td class="nowrap">'+idx+'</td>'+
-      '<td><input placeholder="π.χ. Καλώδιο 3x2.5" class="mat-desc"/></td>'+
-      '<td style="width:110px"><input type="number" min="0" step="0.01" class="mat-qty" value="'+qty+'"/></td>'+
-      '<td style="width:120px"><input placeholder="π.χ. m, τμχ" class="mat-unit" value="'+unit+'"/></td>'+
-      '<td style="width:140px"><input type="number" min="0" step="0.01" class="mat-price right" value="'+price+'"/></td>'+
+    var tr=document.createElement('tr');
+    var qty = row && row.qty!=null ? row.qty : 1;
+    var unit= row && row.unit ? row.unit : '';
+    var price=row && row.price!=null ? row.price : 0;
+    tr.innerHTML =
+      '<td class="nowrap">'+(matBody.children.length+1)+'</td>'+
+      '<td><input class="mat-desc" placeholder="π.χ. Καλώδιο 3x2.5"></td>'+
+      '<td style="width:100px"><input type="number" min="0" step="0.01" class="mat-qty" value="'+qty+'"></td>'+
+      '<td style="width:110px"><input class="mat-unit" placeholder="π.χ. m, τμχ" value="'+unit+'"></td>'+
+      '<td style="width:130px"><input type="number" min="0" step="0.01" class="mat-price" value="'+price+'"></td>'+
       '<td class="right line-total">0.00</td>'+
-      '<td><button class="ghost del-row">🗑️</button></td>';
-    materialsTBody.appendChild(tr);
-    if(row && row.desc){ tr.querySelector('.mat-desc').value = row.desc; }
+      '<td><button class="del-row">🗑️</button></td>';
+    matBody.appendChild(tr);
+    if(row && row.desc){ tr.querySelector('.mat-desc').value=row.desc; }
     bindMatRow(tr);
     recalcMaterials();
   }
-
   function getMaterials(){
-    return $$$('#materialsTable tbody tr').map(function(tr){
-      return {
-        desc: tr.querySelector('.mat-desc').value.trim(),
-        qty: toNumber(tr.querySelector('.mat-qty').value),
-        unit: tr.querySelector('.mat-unit').value.trim(),
-        price: toNumber(tr.querySelector('.mat-price').value)
-      };
-    }).filter(function(r){ return r.desc || r.qty || r.price; });
+    var rows = matBody.querySelectorAll('tr'); var arr=[];
+    for(var i=0;i<rows.length;i++){
+      var tr=rows[i];
+      var desc=tr.querySelector('.mat-desc').value.trim();
+      var qty=num(tr.querySelector('.mat-qty').value);
+      var unit=tr.querySelector('.mat-unit').value.trim();
+      var price=num(tr.querySelector('.mat-price').value);
+      if(desc || qty || price){ arr.push({desc:desc, qty:qty, unit:unit, price:price}); }
+    }
+    return arr;
   }
-
   function recalcMaterials(){
-    var sum = 0;
-    $$$('#materialsTable tbody tr').forEach(function(tr){
-      var qty = toNumber(tr.querySelector('.mat-qty').value);
-      var price = toNumber(tr.querySelector('.mat-price').value);
-      var line = qty * price;
-      tr.querySelector('.line-total').textContent = money(line);
-      sum += line;
-    });
-    materialsSumEl.textContent = money(sum);
+    var rows = matBody.querySelectorAll('tr'); var sum=0;
+    for(var i=0;i<rows.length;i++){
+      var tr=rows[i];
+      var qty=num(tr.querySelector('.mat-qty').value);
+      var price=num(tr.querySelector('.mat-price').value);
+      var line=qty*price;
+      tr.querySelector('.line-total').textContent=money(line);
+      sum+=line;
+    }
+    materialsSumEl.textContent=money(sum);
     recalcTotals();
   }
 
-  // ===== ΣΥΝΟΛΑ & ΦΠΑ =====
+  // -------- Totals & VAT
   function recalcTotals(){
-    var labor = toNumber(fields.labor.value);
-    var mats = toNumber(materialsSumEl.textContent);
-    var subtotal = labor + mats;
-    var vatRate = Math.max(0, toNumber(fields.vatRate.value));
-    var vatAmount = subtotal * vatRate / 100;
-    fields.subtotal.value = money(subtotal);
-    fields.vatAmount.value = money(vatAmount);
-    fields.grandTotal.value = money(subtotal + vatAmount);
+    var labor=num(fields.labor.value);
+    var mats=num(materialsSumEl.textContent);
+    var subtotal=labor+mats;
+    var vatRate=Math.max(0, num(fields.vatRate.value));
+    var vatAmount=subtotal*vatRate/100;
+    fields.subtotal.value=money(subtotal);
+    fields.vatAmount.value=money(vatAmount);
+    fields.grandTotal.value=money(subtotal+vatAmount);
     localStorage.setItem('vat_default', String(vatRate));
   }
+  document.getElementById('labor').addEventListener('input', function(){recalcMaterials();});
+  document.getElementById('vatRate').addEventListener('input', function(){recalcMaterials();});
 
-  ;['labor','vatRate'].forEach(function(id){
-    document.getElementById(id).addEventListener('input', function(){ recalcMaterials(); recalcTotals(); });
-  });
-
-  // ===== CRUD =====
+  // -------- CRUD
   function clearForm(){
-    fields.startTime.value = '';
-    fields.endTime.value = '';
-    fields.hours.value = '';
-    fields.client.value = '';
-    fields.location.value = '';
-    fields.task.value = '';
-    fields.labor.value = '';
-    fields.subtotal.value = '';
-    fields.vatAmount.value = '';
-    fields.grandTotal.value = '';
-    fields.invoice.value = '';
-    materialsTBody.innerHTML = '';
-    addMaterialRow();
-    editingIndex = null;
-    $$('#addBtn').style.display = '';
-    $$('#updateBtn').style.display = 'none';
-    status('Έτοιμο');
+    fields.startTime.value=''; fields.endTime.value=''; fields.hours.value='';
+    fields.client.value=''; fields.location.value=''; fields.task.value='';
+    fields.labor.value=''; fields.subtotal.value=''; fields.vatAmount.value='';
+    fields.grandTotal.value=''; fields.invoice.value='';
+    matBody.innerHTML=''; addMaterialRow(); setStatus('Έτοιμο');
+    document.getElementById('addBtn').style.display=''; document.getElementById('updateBtn').style.display='none';
+    editingIndex=null;
   }
-
   function collect(){
-    var mats = getMaterials();
-    var materialsSum = mats.reduce(function(s,r){ return s + r.qty*r.price; }, 0);
-    var subtotal = toNumber(fields.labor.value) + materialsSum;
-    var vatRate = Math.max(0, toNumber(fields.vatRate.value));
-    var vatAmount = subtotal * vatRate / 100;
+    var mats=getMaterials();
+    var matsSum=0; for(var i=0;i<mats.length;i++){ matsSum+=mats[i].qty*mats[i].price; }
+    var subtotal=num(fields.labor.value)+matsSum;
+    var vatRate=Math.max(0, num(fields.vatRate.value));
+    var vatAmount=subtotal*vatRate/100;
     return {
-      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()+Math.random()),
+      id: Date.now().toString()+Math.random(),
       date: fields.date.value || new Date().toISOString().slice(0,10),
       startTime: fields.startTime.value || '',
       endTime: fields.endTime.value || '',
@@ -358,88 +318,94 @@
       location: fields.location.value.trim(),
       task: fields.task.value.trim(),
       materials: mats,
-      materialsSum: money(materialsSum),
+      materialsSum: money(matsSum),
       labor: money(fields.labor.value),
       subtotal: money(subtotal),
       vatRate: vatRate,
       vatAmount: money(vatAmount),
-      total: money(subtotal + vatAmount),
+      total: money(subtotal+vatAmount),
       invoice: fields.invoice.value.trim()
     };
   }
-
-  function validate(rec){ if(!rec.client) return 'Συμπληρώστε τον πελάτη'; if(!rec.task) return 'Συμπληρώστε τις εργασίες'; return null; }
-
+  function validate(r){ if(!r.client) return 'Συμπληρώστε τον πελάτη'; if(!r.task) return 'Συμπληρώστε τις εργασίες'; return null; }
   function add(){
-    var rec = collect();
-    var err = validate(rec); if(err){ alert(err); return; }
-    data.push(rec); save(); status('Προστέθηκε ✅'); render(); clearForm();
+    var r=collect(); var err=validate(r); if(err){alert(err);return;}
+    data.push(r); save(); render(); clearForm(); setStatus('Προστέθηκε ✅');
   }
-
   function startEdit(id){
-    var idx = data.findIndex(function(r){ return r.id === id; }); if(idx===-1) return; var r = data[idx]; editingIndex = idx;
-    fields.date.value = r.date; fields.startTime.value = r.startTime || ''; fields.endTime.value = r.endTime || '';
-    fields.hours.value = r.hours; fields.client.value = r.client; fields.location.value = r.location; fields.task.value = r.task; fields.labor.value = r.labor; fields.vatRate.value = r.vatRate != null ? r.vatRate : (localStorage.getItem('vat_default')||24); fields.subtotal.value = r.subtotal; fields.vatAmount.value = r.vatAmount; fields.grandTotal.value = r.total; fields.invoice.value = r.invoice || '';
-    materialsTBody.innerHTML=''; (r.materials||[]).forEach(function(row){ addMaterialRow(row); }); if((r.materials||[]).length===0) addMaterialRow();
-    $$('#addBtn').style.display = 'none'; $$('#updateBtn').style.display = '';
-    status('Επεξεργασία εγγραφής…'); window.scrollTo({top:0, behavior:'smooth'});
-    recalcMaterials();
+    var idx=-1; for(var i=0;i<data.length;i++){ if(data[i].id===id){idx=i;break;} }
+    if(idx===-1) return;
+    var r=data[idx]; editingIndex=idx;
+    fields.date.value=r.date; fields.startTime.value=r.startTime||''; fields.endTime.value=r.endTime||'';
+    fields.hours.value=r.hours; fields.client.value=r.client; fields.location.value=r.location;
+    fields.task.value=r.task; fields.labor.value=r.labor; fields.vatRate.value=r.vatRate;
+    fields.subtotal.value=r.subtotal; fields.vatAmount.value=r.vatAmount; fields.grandTotal.value=r.total; fields.invoice.value=r.invoice||'';
+    matBody.innerHTML=''; for(var j=0;j<(r.materials||[]).length;j++){ addMaterialRow(r.materials[j]); } if((r.materials||[]).length===0){addMaterialRow();}
+    document.getElementById('addBtn').style.display='none'; document.getElementById('updateBtn').style.display='';
+    setStatus('Επεξεργασία…'); window.scrollTo(0,0);
+  }
+  function update(){
+    if(editingIndex==null) return;
+    var r=collect(); r.id=data[editingIndex].id;
+    var err=validate(r); if(err){alert(err);return;}
+    data[editingIndex]=r; save(); render(); clearForm(); setStatus('Ενημερώθηκε 💾');
+  }
+  function removeItem(id){
+    if(!confirm('Διαγραφή εγγραφής;')) return;
+    var arr=[]; for(var i=0;i<data.length;i++){ if(data[i].id!==id) arr.push(data[i]); }
+    data=arr; save(); render(); setStatus('Διαγράφηκε 🗑️');
   }
 
-  function update(){ if(editingIndex===null) return; var rec = collect(); rec.id = data[editingIndex].id; var err = validate(rec); if(err){ alert(err); return; } data[editingIndex] = rec; save(); status('Ενημερώθηκε 💾'); render(); clearForm(); }
-
-  function remove(id){ if(!confirm('Διαγραφή εγγραφής;')) return; data = data.filter(function(r){ return r.id !== id; }); save(); render(); status('Διαγράφηκε 🗑️'); }
-
-  // ===== ΠΙΝΑΚΑΣ =====
+  // -------- List
   function filtered(){
-    var fFrom = $$('#filterFrom').value; var fTo = $$('#filterTo').value; var fClient = ($$('#filterClient').value||'').trim().toLowerCase(); var fText = ($$('#filterText').value||'').trim().toLowerCase();
-    return data.filter(function(r){
-      if(fFrom && r.date < fFrom) return false; if(fTo && r.date > fTo) return false; if(fClient && r.client.toLowerCase().indexOf(fClient)===-1) return false; if(fText && (r.location+' '+r.task).toLowerCase().indexOf(fText)===-1) return false; return true;
-    }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+    var fFrom=$('#filterFrom').value, fTo=$('#filterTo').value,
+        fClient=($('#filterClient').value||'').toLowerCase().trim(),
+        fText=($('#filterText').value||'').toLowerCase().trim();
+    var out=[];
+    for(var i=0;i<data.length;i++){
+      var r=data[i];
+      if(fFrom && r.date<fFrom) continue;
+      if(fTo && r.date>fTo) continue;
+      if(fClient && r.client.toLowerCase().indexOf(fClient)===-1) continue;
+      if(fText && (r.location+' '+r.task).toLowerCase().indexOf(fText)===-1) continue;
+      out.push(r);
+    }
+    out.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+    return out;
   }
-
-  function addRow(rec){
-    var tr = document.createElement('tr');
-    var cells = [rec.date, rec.startTime||'—', rec.endTime||'—', rec.hours, rec.client, rec.location, rec.task, money(rec.labor), money(rec.materialsSum), money(rec.subtotal), rec.vatRate+'%', money(rec.vatAmount), money(rec.total), rec.invoice || '—'];
-    cells.forEach(function(c){ var td=document.createElement('td'); td.textContent=c; tr.appendChild(td); });
-    var tdAct = document.createElement('td'); var e = document.createElement('button'); e.textContent='✏️'; e.className='ghost'; var d = document.createElement('button'); d.textContent='🗑️'; d.className='ghost'; e.addEventListener('click', function(){ startEdit(rec.id); }); d.addEventListener('click', function(){ remove(rec.id); }); tdAct.appendChild(e); tdAct.appendChild(document.createTextNode(' ')); tdAct.appendChild(d); tr.appendChild(tdAct);
+  function addRow(r){
+    var tr=document.createElement('tr');
+    var cells=[r.date,r.startTime||'—',r.endTime||'—',r.hours,r.client,r.location,r.task,
+               money(r.labor),money(r.materialsSum),money(r.subtotal),r.vatRate+'%',money(r.vatAmount),money(r.total),r.invoice||'—'];
+    for(var i=0;i<cells.length;i++){ var td=document.createElement('td'); td.textContent=cells[i]; tr.appendChild(td); }
+    var tdAct=document.createElement('td');
+    var e=document.createElement('button'); e.textContent='✏️'; e.addEventListener('click',function(){startEdit(r.id);});
+    var d=document.createElement('button'); d.textContent='🗑️'; d.addEventListener('click',function(){removeItem(r.id);});
+    tdAct.appendChild(e); tdAct.appendChild(document.createTextNode(' ')); tdAct.appendChild(d);
+    tr.appendChild(tdAct);
     tbody.appendChild(tr);
   }
-
-  function render(){ tbody.innerHTML=''; var items = filtered(); items.forEach(addRow); countEl.textContent = items.length; var sum = items.reduce(function(s,r){ return s + toNumber(r.total); }, 0); sumEl.textContent = sum.toFixed(2); }
-
-  function applyFilters(){ render(); status('Εφαρμόστηκαν φίλτρα'); }
-  function resetFilters(){ ['#filterFrom','#filterTo','#filterClient','#filterText'].forEach(function(s){ $$(s).value=''; }); render(); status('Καθαρίστηκαν φίλτρα'); }
-
-  // ===== ΕΞΑΓΩΓΕΣ =====
-  function downloadFile(filename, mime, content){ var blob = new Blob([content], {type:mime}); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); }, 0); }
-
-  function csvEscape(s){ return '"'+String(s).replace(/"/g,'""')+'"'; }
-
-  function exportCsv(){
-    var rows = [[ 'Ημερομηνία','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Πελάτης','Τοποθεσία','Εργασίες','Εργασία (€)','Υλικά (€)','Υποσύνολο (€)','ΦΠΑ (%)','ΦΠΑ (€)','Σύνολο (€)','Παραστατικό','Υλικά (αναλυτικά)']];
-    filtered().forEach(function(r){
-      var mats = (r.materials||[]).map(function(m){ return m.desc+' x'+m.qty+' '+m.unit+' @'+money(m.price)+'€ = '+money(m.qty*m.price)+'€'; }).join(' | ');
-      rows.push([r.date,r.startTime||'',r.endTime||'',r.hours,r.client,r.location,r.task,r.labor,r.materialsSum,r.subtotal,r.vatRate,r.vatAmount,r.total,r.invoice||'', mats]);
-    });
-    var csv = rows.map(function(row){ return row.map(csvEscape).join(','); }).join('\n');
-    downloadFile('δουλειές.csv','text/csv;charset=utf-8;',csv); status('Εξήχθη CSV ⬇️');
+  function render(){
+    tbody.innerHTML='';
+    var items=filtered();
+    for(var i=0;i<items.length;i++){ addRow(items[i]); }
+    countEl.textContent=items.length;
+    var s=0; for(var j=0;j<items.length;j++){ s+=num(items[j].total); }
+    sumEl.textContent=s.toFixed(2);
   }
 
-  function backupJson(){ downloadFile('jobs-backup.json','application/json', JSON.stringify(data,null,2)); status('Αντίγραφο αποθηκεύτηκε 💾'); }
-  function restoreJson(ev){ var f = ev.target.files && ev.target.files[0]; if(!f) return; var reader = new FileReader(); reader.onload = function(){ try{ var arr = JSON.parse(reader.result); if(!Array.isArray(arr)) throw new Error('bad'); data = arr; save(); render(); status('Επαναφορά ολοκληρώθηκε ✅'); }catch(e){ alert('Μη έγκυρο αρχείο JSON'); } }; reader.readAsText(f); ev.target.value=''; }
+  // -------- Wire up buttons
+  document.getElementById('addMat').addEventListener('click', function(){ addMaterialRow(); });
+  document.getElementById('clearMat').addEventListener('click', function(){
+    if(confirm('Καθαρισμός όλων των υλικών;')){ matBody.innerHTML=''; addMaterialRow(); recalcMaterials(); }
+  });
+  document.getElementById('addBtn').addEventListener('click', add);
+  document.getElementById('updateBtn').addEventListener('click', update);
+  document.getElementById('clearFormBtn').addEventListener('click', clearForm);
 
-  function printList(){ var w = window.open('','_blank'); var rows = filtered(); var style = 'body{font-family:system-ui,Segoe UI,Arial;padding:24px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:12px} th{background:#f3f4f6}'; w.document.write('<html><head><title>Εκτύπωση</title><style>'+style+'</style></head><body>'); w.document.write('<h2>Λίστα Δουλειών</h2>'); w.document.write('<table><thead><tr><th>Ημερομηνία</th><th>Έναρξη</th><th>Λήξη</th><th>Ώρες</th><th>Πελάτης</th><th>Τοποθεσία</th><th>Εργασίες</th><th>Εργασία (€)</th><th>Υλικά (€)</th><th>Υποσύνολο</th><th>ΦΠΑ</th><th>Σύνολο</th><th>Παραστ.</th></tr></thead><tbody>'); rows.forEach(function(r){ w.document.write('<tr><td>'+r.date+'</td><td>'+(r.startTime||'')+'</td><td>'+(r.endTime||'')+'</td><td>'+r.hours+'</td><td>'+r.client+'</td><td>'+r.location+'</td><td>'+r.task+'</td><td>'+r.labor+'</td><td>'+r.materialsSum+'</td><td>'+r.subtotal+'</td><td>'+r.vatRate+'% ('+r.vatAmount+'€)</td><td>'+r.total+'</td><td>'+(r.invoice||'')+'</td></tr>'); }); var sum = rows.reduce(function(s,r){ return s + (parseFloat(r.total)||0); }, 0).toFixed(2); w.document.write('<tfoot><tr><td colspan="11" style="text-align:right"><strong>Σύνολο (€):</strong></td><td colspan="2"><strong>'+sum+'</strong></td></tr></tfoot>'); w.document.write('</tbody></table></body></html>'); w.document.close(); w.focus(); w.print(); }
-
-  // === Events ===
-  $$('#addMat').addEventListener('click', function(){ addMaterialRow(); });
-  $$('#clearMat').addEventListener('click', function(){ if(confirm('Καθαρισμός όλων των υλικών;')){ materialsTBody.innerHTML=''; addMaterialRow(); recalcMaterials(); }});
-  $$('#addBtn').addEventListener('click', add);
-  $$('#updateBtn').addEventListener('click', update);
-  $$('#clearFormBtn').addEventListener('click', clearForm);
-  $$('#applyFilters').addEventListener('click', applyFilters);
-  $$('#resetFilters').addEventListener('click', resetFilters);
-  $$('#exportCsv').addEventListener('click', exportCsv);
-  $$('#printList').addEve
+  // -------- Init
+  addMaterialRow();  // σημαντικό: δημιουργεί ΠΑΝΤΑ τουλάχιστον μία γραμμή
+  render();
+</script>
 </body>
 </html>
